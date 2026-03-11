@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "apexcharts": "^5.6.0",
+    "pocketbase": "^0.26.8",
     "vue": "^3.5.29",
     "vue-router": "^4.6.4",
-    "vue3-apexcharts": "^1.10.0"
+    "vue3-apexcharts": "^1.10.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.4",

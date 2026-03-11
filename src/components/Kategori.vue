@@ -18,80 +18,87 @@
       </div>
     </div>
 
-    <div v-if="filteredDefault.length === 0 && filteredCustom.length === 0" class="bg-white p-12 rounded-xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center mt-4">
-      <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-        <i class="fa-solid fa-folder-open text-3xl text-slate-300"></i>
-      </div>
-      <h3 class="text-lg font-bold text-slate-700 mb-1">Kategori Tidak Ditemukan</h3>
-      <p class="text-slate-500 text-sm">Tidak ada kategori yang cocok dengan kata kunci "{{ searchQuery }}".</p>
-      <button @click="searchQuery = ''" class="mt-4 text-blue-600 hover:text-blue-800 text-sm font-semibold">
-        Reset Pencarian
-      </button>
+    <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
+      <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
+      <p class="text-slate-500 font-medium">Sinkronisasi data kategori...</p>
     </div>
 
-    <div v-if="filteredDefault.length > 0" class="mt-2">
-      <div class="flex items-center gap-2 mb-4 px-1">
-        <i class="fa-solid fa-layer-group text-blue-500 text-lg"></i>
-        <h2 class="text-lg font-bold text-slate-700">Kategori Sistem</h2>
+    <div v-else>
+      <div v-if="filteredSystem.length === 0 && filteredCustom.length === 0" class="bg-white p-12 rounded-xl shadow-sm border border-slate-200 text-center flex flex-col items-center justify-center mt-4">
+        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+          <i class="fa-solid fa-folder-open text-3xl text-slate-300"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-700 mb-1">Kategori Tidak Ditemukan</h3>
+        <p class="text-slate-500 text-sm">Tidak ada kategori yang cocok dengan kata kunci "{{ searchQuery }}".</p>
+        <button @click="searchQuery = ''" class="mt-4 text-blue-600 hover:text-blue-800 text-sm font-semibold">
+          Reset Pencarian
+        </button>
       </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div 
-          v-for="(kat, index) in filteredDefault" 
-          :key="'def-'+index"
-          @click="goToDetail(kat.title)"
-          class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all group cursor-pointer flex flex-col h-full"
-        >
-          <div class="flex justify-between items-start mb-4">
-            <div :class="kat.bgClass" class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300">
-              <i :class="[kat.icon, kat.textClass, 'text-xl']"></i>
+
+      <div v-if="filteredSystem.length > 0" class="mt-2">
+        <div class="flex items-center gap-2 mb-4 px-1">
+          <i class="fa-solid fa-layer-group text-blue-500 text-lg"></i>
+          <h2 class="text-lg font-bold text-slate-700">Kategori Sistem</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div 
+            v-for="kat in filteredSystem" 
+            :key="kat.id"
+            @click="goToDetail(kat)"
+            class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all group cursor-pointer flex flex-col h-full"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <div :class="getDesign(kat.nama, true).bgClass" class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300">
+                <i :class="[getDesign(kat.nama, true).icon, getDesign(kat.nama, true).textClass, 'text-xl']"></i>
+              </div>
+              <span class="bg-slate-50 text-slate-500 px-3 py-1 rounded-full text-xs font-bold border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                {{ kat.count || 0 }} Dokumen
+              </span>
             </div>
-            <span class="bg-slate-50 text-slate-500 px-3 py-1 rounded-full text-xs font-bold border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-              {{ kat.count }} Dokumen
-            </span>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-blue-600 transition-colors">{{ kat.title }}</h3>
-            <p class="text-slate-500 text-sm leading-relaxed line-clamp-2">{{ kat.description }}</p>
-          </div>
-          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-slate-400 group-hover:text-blue-600 transition-colors">
-            Lihat Arsip <i class="fa-solid fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+            <div class="flex-1">
+              <h3 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-blue-600 transition-colors">{{ kat.nama }}</h3>
+              <p class="text-slate-500 text-sm leading-relaxed line-clamp-2">{{ kat.deskripsi }}</p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-slate-400 group-hover:text-blue-600 transition-colors">
+              Lihat Arsip <i class="fa-solid fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <hr v-if="filteredDefault.length > 0 && filteredCustom.length > 0" class="border-slate-200 my-4 border-dashed">
+      <hr v-if="filteredSystem.length > 0 && filteredCustom.length > 0" class="border-slate-200 my-8 border-dashed">
 
-    <div v-if="filteredCustom.length > 0" class="mt-2">
-      <div class="flex justify-between items-center mb-4 px-1">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-folder-tree text-emerald-500 text-lg"></i>
-          <h2 class="text-lg font-bold text-slate-700">Kategori Kustom</h2>
+      <div v-if="filteredCustom.length > 0" class="mt-2">
+        <div class="flex justify-between items-center mb-4 px-1">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-folder-tree text-emerald-500 text-lg"></i>
+            <h2 class="text-lg font-bold text-slate-700">Kategori Kustom</h2>
+          </div>
         </div>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <div 
-          v-for="(kat, index) in filteredCustom" 
-          :key="'cus-'+index"
-          @click="goToDetail(kat.title)"
-          class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-emerald-300 transition-all group cursor-pointer flex flex-col h-full relative overflow-hidden"
-        >
-          <div class="flex justify-between items-start mb-4">
-            <div :class="kat.bgClass" class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300">
-              <i :class="[kat.icon, kat.textClass, 'text-xl']"></i>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div 
+            v-for="kat in filteredCustom" 
+            :key="kat.id"
+            @click="goToDetail(kat)"
+            class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-emerald-300 transition-all group cursor-pointer flex flex-col h-full relative overflow-hidden"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <div class="bg-slate-100 w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300">
+                <i class="fa-solid fa-folder-open text-slate-600 text-xl"></i>
+              </div>
+              <span class="bg-slate-50 text-slate-500 px-3 py-1 rounded-full text-xs font-bold border border-slate-100 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+                {{ kat.count || 0 }} Dokumen
+              </span>
             </div>
-            <span class="bg-slate-50 text-slate-500 px-3 py-1 rounded-full text-xs font-bold border border-slate-100 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
-              {{ kat.count }} Dokumen
-            </span>
-          </div>
-          <div class="flex-1">
-            <h3 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-emerald-600 transition-colors">{{ kat.title }}</h3>
-            <p class="text-slate-500 text-sm leading-relaxed line-clamp-2">{{ kat.description }}</p>
-          </div>
-          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-slate-400 group-hover:text-emerald-600 transition-colors">
-            Lihat Arsip <i class="fa-solid fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+            <div class="flex-1">
+              <h3 class="font-bold text-slate-800 text-lg mb-1 group-hover:text-emerald-600 transition-colors">{{ kat.nama }}</h3>
+              <p class="text-slate-500 text-sm leading-relaxed line-clamp-2">{{ kat.deskripsi || 'Tidak ada deskripsi' }}</p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-slate-400 group-hover:text-emerald-600 transition-colors">
+              Lihat Arsip <i class="fa-solid fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+            </div>
           </div>
         </div>
       </div>
@@ -101,43 +108,88 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import pb from '../pb.js'
 
 const router = useRouter()
 const searchQuery = ref('')
+const isLoading = ref(true)
 
-const goToDetail = (title) => {
-  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
-  router.push(`/kategori/${slug}`)
+const userRole = ref(localStorage.getItem('user_role') || 'Staff')
+const userBidang = ref(localStorage.getItem('user_bidang') || 'Tata Usaha')
+
+const allCategories = ref([])
+
+const getDesign = (nama, isSystem) => {
+  const t = nama.toLowerCase()
+  if (isSystem) {
+    if (t.includes('masuk')) return { icon: 'fa-solid fa-inbox', bgClass: 'bg-blue-50', textClass: 'text-blue-600' }
+    if (t.includes('keluar')) return { icon: 'fa-solid fa-paper-plane', bgClass: 'bg-green-50', textClass: 'text-green-600' }
+    if (t.includes('keputusan') || t.includes('sk')) return { icon: 'fa-solid fa-file-signature', bgClass: 'bg-purple-50', textClass: 'text-purple-600' }
+    if (t.includes('perintah')) return { icon: 'fa-solid fa-briefcase', bgClass: 'bg-orange-50', textClass: 'text-orange-600' }
+    if (t.includes('keuangan') || t.includes('nota')) return { icon: 'fa-solid fa-money-bill-wave', bgClass: 'bg-emerald-50', textClass: 'text-emerald-600' }
+    if (t.includes('edaran')) return { icon: 'fa-solid fa-bullhorn', bgClass: 'bg-red-50', textClass: 'text-red-600' }
+    if (t.includes('acara')) return { icon: 'fa-solid fa-handshake', bgClass: 'bg-indigo-50', textClass: 'text-indigo-600' }
+
+    return { icon: 'fa-solid fa-folder', bgClass: 'bg-slate-100', textClass: 'text-slate-600' }
+  }
 }
 
-const defaultKategori = ref([
-  { title: 'Surat Masuk', description: 'Kumpulan surat yang diterima dari instansi atau pihak luar.', icon: 'fa-solid fa-inbox', bgClass: 'bg-blue-50', textClass: 'text-blue-600', count: 1284 },
-  { title: 'Surat Keluar', description: 'Dokumen surat yang dikirimkan ke instansi atau pihak luar.', icon: 'fa-solid fa-paper-plane', bgClass: 'bg-green-50', textClass: 'text-green-600', count: 842 },
-  { title: 'Surat Keputusan', description: 'Arsip penetapan atau keputusan resmi dari pimpinan.', icon: 'fa-solid fa-file-signature', bgClass: 'bg-purple-50', textClass: 'text-purple-600', count: 156 },
-  { title: 'Surat Perintah', description: 'Surat perintah (SP) atau perjalanan dinas pegawai.', icon: 'fa-solid fa-briefcase', bgClass: 'bg-orange-50', textClass: 'text-orange-600', count: 320 },
-  { title: 'Nota Dinas', description: 'Komunikasi internal antar bidang atau urusan dalam instansi.', icon: 'fa-solid fa-file-invoice', bgClass: 'bg-teal-50', textClass: 'text-teal-600', count: 415 },
-  { title: 'Surat Edaran', description: 'Pengumuman atau edaran resmi yang berlaku untuk seluruh staf.', icon: 'fa-solid fa-bullhorn', bgClass: 'bg-red-50', textClass: 'text-red-600', count: 89 },
-  { title: 'Berita Acara', description: 'Dokumen pengesahan serah terima atau kejadian penting.', icon: 'fa-solid fa-handshake', bgClass: 'bg-indigo-50', textClass: 'text-indigo-600', count: 210 },
-  { title: 'Dokumen Keuangan', description: 'Arsip pencairan, kwitansi, dan laporan pertanggung jawaban.', icon: 'fa-solid fa-money-bill-wave', bgClass: 'bg-emerald-50', textClass: 'text-emerald-600', count: 678 }
-])
+const fetchAllData = async () => {
+  isLoading.value = true
+  try {
+    const katRecords = await pb.collection('kategori').getFullList({
+      sort: '-is_system,created'
+    })
 
-const customKategori = ref([
-  { title: 'Dokumen Kepala Sekolah', description: 'Arsip rahasia dan laporan manajerial khusus Kepala Sekolah.', icon: 'fa-solid fa-inbox', bgClass: 'bg-slate-100', textClass: 'text-slate-600', count: 45 },
-  { title: 'Arsip PPDB 2025/2026', description: 'Kumpulan berkas pendaftaran Peserta Didik Baru.', icon: 'fa-solid fa-inbox', bgClass: 'bg-slate-100', textClass: 'text-slate-600', count: 850 },
-  { title: 'Portofolio Guru A', description: 'Dokumen RPP, Silabus, dan sertifikasi milik Guru A.', icon: 'fa-solid fa-inbox', bgClass: 'bg-slate-100', textClass: 'text-slate-600', count: 112 },
-])
+    let filterArsip = 'is_deleted != true'
+    
+    if (userRole.value !== 'Arsiparis' && userRole.value !== 'Kepala Sekolah' && userRole.value !== 'Petugas Arsip') {
+      filterArsip += ` && bidang = "${userBidang.value}"`
+    }
 
-const filteredDefault = computed(() => {
-  if (!searchQuery.value) return defaultKategori.value
+    const arsipRecords = await pb.collection('arsip').getFullList({
+      filter: filterArsip,
+      fields: 'id,kategori_id'
+    })
+
+    allCategories.value = katRecords.map(kat => {
+      const totalDocs = arsipRecords.filter(arsip => arsip.kategori_id === kat.id).length
+      return {
+        ...kat,
+        count: totalDocs
+      }
+    })
+
+  } catch (error) {
+    console.error("Gagal sinkronisasi data:", error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchAllData()
+})
+
+const goToDetail = (kat) => {
+  router.push(`/kategori/${kat.id}`)
+}
+
+const filteredSystem = computed(() => {
+  let sys = allCategories.value.filter(k => k.is_system)
+  if (!searchQuery.value) return sys
+  
   const q = searchQuery.value.toLowerCase()
-  return defaultKategori.value.filter(k => k.title.toLowerCase().includes(q) || k.description.toLowerCase().includes(q))
+  return sys.filter(k => k.nama.toLowerCase().includes(q) || (k.deskripsi && k.deskripsi.toLowerCase().includes(q)))
 })
 
 const filteredCustom = computed(() => {
-  if (!searchQuery.value) return customKategori.value
+  let cust = allCategories.value.filter(k => !k.is_system)
+  if (!searchQuery.value) return cust
+  
   const q = searchQuery.value.toLowerCase()
-  return customKategori.value.filter(k => k.title.toLowerCase().includes(q) || k.description.toLowerCase().includes(q))
+  return cust.filter(k => k.nama.toLowerCase().includes(q) || (k.deskripsi && k.deskripsi.toLowerCase().includes(q)))
 })
 </script>

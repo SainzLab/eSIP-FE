@@ -22,17 +22,22 @@
     </div>
   </div>
 
-  <div class="hidden md:flex h-screen overflow-hidden">
+  <div v-if="$route.name === 'Login'" class="hidden md:block min-h-screen bg-slate-50">
+    <router-view></router-view>
+  </div>
+
+  <div v-else class="hidden md:flex h-screen overflow-hidden">
     <Sidebar />
 
     <div class="flex-1 flex flex-col relative overflow-y-auto overflow-x-hidden bg-background">
       <Header />
       
       <main class="p-4 md:p-8">
-        
         <router-view></router-view>
-
       </main>
+
+      <GeminiWidget />
+      
     </div>
   </div>
 </template>
@@ -40,4 +45,5 @@
 <script setup>
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
+import GeminiWidget from './components/GeminiWidget.vue'
 </script>

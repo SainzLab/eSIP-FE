@@ -1,90 +1,97 @@
 <template>
-  <div class="flex flex-col gap-6 pb-8">
+  <div class="flex flex-col gap-6 pb-10">
     
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-red-100">
       <div>
         <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-3">
           <i class="fa-solid fa-trash-can text-red-500"></i>
           Tong Sampah
         </h1>
-        <p class="text-slate-500 text-sm mt-1">Arsip yang dihapus akan tersimpan di sini sebelum dihapus permanen.</p>
+        <p class="text-slate-500 text-sm mt-1">Dokumen yang dihapus akan tersimpan di sini sebelum dimusnahkan.</p>
       </div>
-      
-      <div class="flex gap-3 w-full md:w-auto">
-        <button 
-          @click="confirmEmptyTrash"
-          class="flex-1 md:flex-none px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2"
-        >
-          <i class="fa-solid fa-dumpster"></i> Kosongkan Sampah
-        </button>
-      </div>
-    </div>
-
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-      <div class="relative w-full md:w-80">
-        <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input 
-          v-model="searchQuery"
-          type="text" 
-          placeholder="Cari arsip terhapus..." 
-          class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 text-sm transition-all"
-        >
-      </div>
+      <button 
+        v-if="arsipTerhapus.length > 0"
+        @click="kosongkanTongSampah"
+        class="bg-red-50 hover:bg-red-100 text-red-600 px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 transition-all border border-red-200 shadow-sm"
+      >
+        <i class="fa-solid fa-fire"></i> Kosongkan Semua
+      </button>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse whitespace-nowrap">
+        <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-              <th class="py-3.5 px-4 font-semibold w-12 text-center">No</th>
-              <th class="py-3.5 px-4 font-semibold">Nama Dokumen</th>
-              <th class="py-3.5 px-4 font-semibold">Kategori Asal</th>
-              <th class="py-3.5 px-4 font-semibold">Tgl Dihapus</th>
-              <th class="py-3.5 px-4 font-semibold text-center w-40">Aksi</th>
+            <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+              <th class="py-4 px-6 font-bold w-12 text-center">No</th>
+              <th class="py-4 px-6 font-bold">Informasi Dokumen</th>
+              <th class="py-4 px-6 font-bold">Kategori & Bidang</th>
+              <th class="py-4 px-6 font-bold">Waktu Dihapus</th>
+              <th class="py-4 px-6 font-bold text-right">Aksi</th>
             </tr>
           </thead>
-          <tbody v-if="filteredTrash.length === 0">
-            <tr>
-              <td colspan="5" class="py-16 text-center">
-                <div class="flex flex-col items-center justify-center text-slate-400">
-                  <i class="fa-solid fa-trash-arrow-up text-5xl mb-4 opacity-20"></i>
-                  <p class="text-lg font-medium">Tong sampah kosong</p>
-                  <p class="text-sm">Tidak ada dokumen yang perlu dibersihkan.</p>
-                </div>
+          <tbody class="text-sm divide-y divide-slate-100">
+            <tr v-if="isLoading" class="text-center">
+              <td colspan="5" class="py-8 text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                <p>Memuat isi tong sampah...</p>
               </td>
             </tr>
-          </tbody>
-          <tbody v-else class="text-sm divide-y divide-slate-100">
-            <tr v-for="(item, index) in filteredTrash" :key="item.id" class="hover:bg-red-50/30 transition-colors group">
-              <td class="py-4 px-4 text-center text-slate-500">{{ index + 1 }}</td>
-              <td class="py-4 px-4">
-                <div class="flex flex-col">
-                  <span class="font-bold text-slate-700">{{ item.nama }}</span>
-                  <span class="text-[10px] text-slate-400 uppercase tracking-wider">{{ item.noSurat }}</span>
+            
+            <tr v-else-if="paginatedTrash.length === 0" class="text-center">
+              <td colspan="5" class="py-12">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <i class="fa-solid fa-seedling text-2xl text-emerald-400"></i>
+                </div>
+                <p class="text-slate-500 font-medium">Tong sampah bersih! Tidak ada dokumen yang terhapus.</p>
+              </td>
+            </tr>
+            
+            <tr v-else v-for="(arsip, index) in paginatedTrash" :key="arsip.id" class="hover:bg-red-50/30 transition-colors group">
+              <td class="py-4 px-6 text-center text-slate-500 font-medium">
+                {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex items-start gap-3 opacity-70 group-hover:opacity-100 transition-opacity">
+                  <div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-file-excel text-lg" v-if="arsip.file_dokumen.includes('.xls')"></i>
+                    <i class="fa-solid fa-file-word text-lg" v-else-if="arsip.file_dokumen.includes('.doc')"></i>
+                    <i class="fa-solid fa-file-pdf text-lg" v-else></i>
+                  </div>
+                  <div>
+                    <p class="font-bold text-slate-800 line-clamp-1 strike line-through decoration-slate-400">{{ arsip.judul }}</p>
+                    <p class="text-xs text-slate-500 mt-0.5">No: {{ arsip.no_surat || '-' }}</p>
+                  </div>
                 </div>
               </td>
-              <td class="py-4 px-4">
-                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium border border-slate-200">
-                  {{ item.kategori }}
-                </span>
+              <td class="py-4 px-6 opacity-70">
+                <div class="flex flex-col gap-1.5 items-start">
+                  <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded uppercase tracking-wider">
+                    {{ arsip.expand?.kategori_id?.nama || 'Tanpa Kategori' }}
+                  </span>
+                  <span class="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                    <i class="fa-solid fa-building text-[10px] mr-1 text-slate-400"></i> {{ arsip.bidang }}
+                  </span>
+                </div>
               </td>
-              <td class="py-4 px-4 text-slate-500">{{ item.deletedAt }}</td>
-              <td class="py-4 px-4">
-                <div class="flex items-center justify-center gap-2">
+              <td class="py-4 px-6 text-slate-500 text-xs font-medium">
+                {{ formatDateTime(arsip.updated) }}
+              </td>
+              <td class="py-4 px-6 text-right">
+                <div class="flex justify-end gap-2">
                   <button 
-                    @click="restoreItem(item)"
-                    class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all font-semibold text-xs"
-                    title="Pulihkan Dokumen"
+                    @click="restoreArsip(arsip)" 
+                    class="px-3 py-1.5 rounded-lg text-emerald-600 font-bold text-xs hover:bg-emerald-50 flex items-center gap-1.5 border border-emerald-100 transition-colors bg-white shadow-sm" 
+                    title="Kembalikan Dokumen"
                   >
                     <i class="fa-solid fa-rotate-left"></i> Restore
                   </button>
                   <button 
-                    @click="deletePermanently(item)"
-                    class="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
-                    title="Hapus Permanen"
+                    @click="deletePermanent(arsip)" 
+                    class="w-8 h-8 rounded-lg text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-colors border border-red-100 bg-white shadow-sm" 
+                    title="Musnahkan Permanen"
                   >
-                    <i class="fa-solid fa-circle-xmark"></i>
+                    <i class="fa-solid fa-fire"></i>
                   </button>
                 </div>
               </td>
@@ -92,41 +99,130 @@
           </tbody>
         </table>
       </div>
+
+      <div v-if="!isLoading && arsipTerhapus.length > 0" class="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 bg-slate-50">
+        <div>Menampilkan <span class="font-bold text-slate-700">{{ paginatedTrash.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0 }}</span> hingga <span class="font-bold text-slate-700">{{ Math.min(currentPage * itemsPerPage, arsipTerhapus.length) }}</span> dari <span class="font-bold text-slate-700">{{ arsipTerhapus.length }}</span> dokumen terhapus</div>
+        <div class="flex gap-1">
+          <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white hover:bg-slate-100 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium">Prev</button>
+          <span class="px-3 py-1.5 bg-red-500 text-white rounded-md font-bold shadow-sm">{{ currentPage }} / {{ totalPages }}</span>
+          <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white hover:bg-slate-100 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium">Next</button>
+        </div>
+      </div>
+
     </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import pb from '../pb.js'
 
-const searchQuery = ref('')
+const userRole = ref(localStorage.getItem('user_role') || 'Staff')
+const userBidang = ref(localStorage.getItem('user_bidang') || 'Tata Usaha')
 
-const trashItems = ref([
-  { id: 1, nama: 'Draft Undangan Komite', noSurat: '001/KOM/2026', kategori: 'Surat Keluar', deletedAt: '2 jam yang lalu' },
-  { id: 2, nama: 'Scan KTP Guru Pensiun', noSurat: '-', kategori: 'Dokumen Guru', deletedAt: 'Kemarin, 14:20' },
-  { id: 3, nama: 'Laporan Kantin Januari', noSurat: '04/KANTIN/26', kategori: 'Keuangan', deletedAt: '3 hari yang lalu' },
-])
+const isLoading = ref(true)
+const arsipTerhapus = ref([])
 
-const filteredTrash = computed(() => {
-  return trashItems.value.filter(item => 
-    item.nama.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    item.kategori.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+const currentPage = ref(1)
+const itemsPerPage = 15
+
+const formatDateTime = (dateString) => {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + 
+         date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
+
+const fetchTrash = async () => {
+  isLoading.value = true
+  try {
+    let filterQuery = 'is_deleted = true'
+
+    if (userRole.value !== 'Petugas Arsip' && userRole.value !== 'Kepala Sekolah' && userRole.value !== 'Arsiparis') {
+      filterQuery += ` && bidang = "${userBidang.value}"`
+    }
+
+    const records = await pb.collection('arsip').getFullList({
+      filter: filterQuery,
+      sort: '-updated', 
+      expand: 'kategori_id'
+    })
+    
+    arsipTerhapus.value = records
+
+    if (currentPage.value > totalPages.value && totalPages.value > 0) {
+      currentPage.value = totalPages.value
+    }
+  } catch (error) {
+    console.error("Gagal mengambil data tong sampah:", error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchTrash()
 })
 
-const restoreItem = (item) => {
-  alert(`Memulihkan: ${item.nama}`)
-}
-
-const deletePermanently = (item) => {
-  if(confirm('Hapus permanen? Data tidak bisa dikembalikan lagi.')) {
-    trashItems.value = trashItems.value.filter(i => i.id !== item.id)
+const restoreArsip = async (arsip) => {
+  try {
+    await pb.collection('arsip').update(arsip.id, {
+      is_deleted: false
+    })
+    fetchTrash() 
+    alert(`Dokumen "${arsip.judul}" berhasil dikembalikan ke Manajemen Arsip.`)
+  } catch (error) {
+    console.error("Gagal merestore arsip:", error)
+    alert("Terjadi kesalahan saat mengembalikan dokumen.")
   }
 }
 
-const confirmEmptyTrash = () => {
-  if(confirm('Kosongkan semua sampah? Tindakan ini tidak dapat dibatalkan.')) {
-    trashItems.value = []
+const deletePermanent = async (arsip) => {
+  if (confirm(`PERINGATAN! Anda akan memusnahkan dokumen "${arsip.judul}" secara permanen. File tidak dapat dikembalikan. Lanjutkan?`)) {
+    try {
+      await pb.collection('arsip').delete(arsip.id)
+      fetchTrash() 
+    } catch (error) {
+      console.error("Gagal menghapus permanen:", error)
+      alert("Gagal memusnahkan dokumen. Pastikan Anda memiliki izin akses.")
+    }
   }
+}
+
+const kosongkanTongSampah = async () => {
+  if (confirm(`Apakah Anda yakin ingin memusnahkan SEMUA dokumen di tong sampah secara permanen?`)) {
+    try {
+      isLoading.value = true
+      for (const arsip of arsipTerhapus.value) {
+        await pb.collection('arsip').delete(arsip.id)
+      }
+      fetchTrash()
+      currentPage.value = 1
+    } catch (error) {
+      console.error("Gagal mengosongkan:", error)
+      alert("Terjadi kesalahan saat mengosongkan tong sampah.")
+    } finally {
+      isLoading.value = false
+    }
+  }
+}
+
+const totalPages = computed(() => {
+  return Math.ceil(arsipTerhapus.value.length / itemsPerPage) || 1
+})
+
+const paginatedTrash = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return arsipTerhapus.value.slice(start, end)
+})
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--
 }
 </script>

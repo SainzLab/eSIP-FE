@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div class="flex flex-col h-[calc(100vh-120px)] bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
     <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -141,4 +141,4 @@ const sendMessage = async () => {
 const clearChat = () => {
   chatHistory.value = []
 }
-</script>
+</script> -->

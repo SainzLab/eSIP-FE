@@ -1,15 +1,24 @@
 <template>
-  <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-lg font-bold text-slate-800">Time Statistics</h2>
-      <div class="flex gap-4 items-center">
-        <div class="flex items-center gap-2 text-sm text-slate-400">
-          <span class="w-2 h-2 rounded-full bg-primary"></span>
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 relative">
+    
+    <div v-if="isLoading" class="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl">
+      <i class="fa-solid fa-circle-notch fa-spin text-3xl text-blue-500 mb-2"></i>
+      <p class="text-sm text-slate-500 font-medium">Memuat statistik data...</p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Statistik Surat Masuk & Keluar</h2>
+        <p class="text-xs text-slate-500 mt-1">Akumulasi dokumen berdasarkan bulan pada tahun {{ currentYear }}.</p>
+      </div>
+      
+      <div class="flex items-center gap-4 text-sm font-medium">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-blue-500"></span> Surat Masuk
         </div>
-        <select class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 outline-none bg-white text-slate-600 focus:border-primary">
-          <option>Logout</option>
-          <option>Export PDF</option>
-        </select>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-emerald-400"></span> Surat Keluar
+        </div>
       </div>
     </div>
 
@@ -25,21 +34,27 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
+import pb from '../pb.js'
 
 const apexchart = VueApexCharts
+const currentYear = new Date().getFullYear()
+const isLoading = ref(true)
+
+const userRole = ref(localStorage.getItem('user_role') || 'Staff')
+const userBidang = ref(localStorage.getItem('user_bidang') || 'Tata Usaha')
 
 const series = ref([
   {
-    name: 'Dokumen Fisik (Bar)',
+    name: 'Surat Masuk (Bar)',
     type: 'column',
-    data: [150, 200, 120, 380, 280, 320, 250, 130, 80, 200, 250, 220]
+    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
   },
   {
-    name: 'Tren Digitalisasi (Area)',
+    name: 'Surat Keluar (Area)',
     type: 'area',
-    data: [40, 70, 110, 80, 95, 90, 85, 120, 350, 140, 240, 210]
+    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] 
   }
 ])
 
@@ -47,14 +62,25 @@ const chartOptions = ref({
   chart: {
     height: 320,
     type: 'line',
-    toolbar: { show: false },
-    fontFamily: 'inherit'
+    fontFamily: 'inherit',
+    toolbar: { 
+      show: true, 
+      tools: {
+        download: true,
+        selection: false,
+        zoom: false,
+        zoomin: false,
+        zoomout: false,
+        pan: false,
+        reset: false
+      }
+    }
   },
   stroke: {
-    width: [0, 2],
+    width: [0, 3], 
     curve: 'smooth' 
   },
-  colors: ['#2563eb', '#3b82f6'],
+  colors: ['#3b82f6', '#10b981'], 
   fill: {
     type: ['solid', 'gradient'], 
     gradient: {
@@ -68,26 +94,77 @@ const chartOptions = ref({
     enabled: false
   },
   xaxis: {
-    categories: ['10', '40', '50', '60', '100', '120', '125', '130', '40', '60', '100', '2k'],
+    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
     axisBorder: { show: false },
     axisTicks: { show: false },
-    labels: {
-      style: { colors: '#94a3b8' } 
-    }
+    labels: { style: { colors: '#94a3b8', fontWeight: 600 } }
   },
   yaxis: {
     min: 0,
     tickAmount: 4,
-    labels: {
-      style: { colors: '#94a3b8' }
+    labels: { 
+      style: { colors: '#94a3b8' },
+      formatter: (val) => { return Math.floor(val) } 
     }
   },
   grid: {
     borderColor: '#f1f5f9',
-    strokeDashArray: 0,
+    strokeDashArray: 4, 
     xaxis: { lines: { show: true } },
     yaxis: { lines: { show: true } }
   },
-  legend: { show: false }
+  legend: { show: false }, 
+  tooltip: {
+    shared: true,
+    intersect: false,
+  }
+})
+
+const fetchChartData = async () => {
+  isLoading.value = true
+  try {
+    const katRecords = await pb.collection('kategori').getFullList({ filter: 'is_system = true' })
+    const idMasuk = katRecords.find(k => k.nama.toLowerCase().includes('masuk'))?.id
+    const idKeluar = katRecords.find(k => k.nama.toLowerCase().includes('keluar'))?.id
+
+    let dataMasuk = Array(12).fill(0)
+    let dataKeluar = Array(12).fill(0)
+
+    let filterArsip = `is_deleted != true && tanggal_surat >= "${currentYear}-01-01" && tanggal_surat <= "${currentYear}-12-31"`
+    
+    if (userRole.value !== 'Arsiparis' && userRole.value !== 'Petugas Arsip' && userRole.value !== 'Kepala Sekolah') {
+      filterArsip += ` && bidang = "${userBidang.value}"`
+    }
+
+    const arsipRecords = await pb.collection('arsip').getFullList({
+      filter: filterArsip,
+      fields: 'id,kategori_id,tanggal_surat' 
+    })
+
+    arsipRecords.forEach(arsip => {
+      const date = new Date(arsip.tanggal_surat)
+      const monthIndex = date.getMonth() 
+
+      if (arsip.kategori_id === idMasuk) {
+        dataMasuk[monthIndex] += 1
+      } else if (arsip.kategori_id === idKeluar) {
+        dataKeluar[monthIndex] += 1
+      }
+    })
+
+    series.value = [
+      { name: 'Surat Masuk', type: 'column', data: dataMasuk },
+      { name: 'Surat Keluar', type: 'area', data: dataKeluar }
+    ]
+
+  } catch (error) {
+    console.error("Gagal mengambil data chart:", error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchChartData()
 })
 </script>

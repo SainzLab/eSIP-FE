@@ -17,42 +17,72 @@
       </button>
     </div>
 
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div class="relative w-full md:w-96">
+        <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input 
+          v-model="searchQuery"
+          type="text" 
+          placeholder="Cari nama kategori atau deskripsi..." 
+          class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-sm transition-shadow"
+        >
+      </div>
+    </div>
+
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
-              <th class="py-4 px-6 font-bold w-16 text-center">Ikon</th>
+              <th class="py-4 px-6 font-bold w-12 text-center">No</th>
+              <th class="py-4 px-6 font-bold w-16 text-center"></th>
               <th class="py-4 px-6 font-bold">Nama Kategori</th>
               <th class="py-4 px-6 font-bold">Deskripsi</th>
-              <th class="py-4 px-6 font-bold text-center">Jumlah Dokumen</th>
               <th class="py-4 px-6 font-bold text-right">Aksi</th>
             </tr>
           </thead>
           <tbody class="text-sm divide-y divide-slate-100">
-            <tr v-for="(kat, index) in categories" :key="index" class="hover:bg-slate-50/50 transition-colors group">
+            <tr v-if="isLoading" class="text-center">
+              <td colspan="5" class="py-8 text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                <p>Memuat data kategori...</p>
+              </td>
+            </tr>
+
+            <tr v-else-if="paginatedCategories.length === 0" class="text-center">
+              <td colspan="5" class="py-8 text-slate-400">
+                <p>Belum ada kategori yang sesuai pencarian.</p>
+              </td>
+            </tr>
+
+            <tr v-else v-for="(kat, index) in paginatedCategories" :key="kat.id" class="hover:bg-slate-50/50 transition-colors group">
+              <td class="py-4 px-6 text-center text-slate-500 font-medium">
+                {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+              </td>
               <td class="py-4 px-6 text-center">
                 <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
-                  <i :class="kat.icon" class="text-lg"></i>
+                  <i class="fa-solid fa-folder text-lg"></i>
                 </div>
               </td>
               <td class="py-4 px-6">
-                <span class="font-bold text-slate-800">{{ kat.title }}</span>
+                <span class="font-bold text-slate-800">{{ kat.nama }}</span>
+                <span v-if="kat.is_system" class="ml-2 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase font-bold">Bawaan Sistem</span>
               </td>
               <td class="py-4 px-6">
-                <p class="text-slate-500 text-xs line-clamp-1 italic">{{ kat.description }}</p>
-              </td>
-              <td class="py-4 px-6 text-center">
-                <span class="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-[11px] font-bold">
-                  {{ kat.count }} Items
-                </span>
+                <p class="text-slate-500 text-xs line-clamp-1 italic">{{ kat.deskripsi || '-' }}</p>
               </td>
               <td class="py-4 px-6 text-right">
                 <div class="flex justify-end gap-2">
-                  <button @click="openModal('edit', kat)" class="w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
+                  <button @click="openModal('edit', kat)" class="w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors" title="Edit Kategori">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
-                  <button @click="deleteCategory(index)" class="w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors">
+                  <button 
+                    @click="deleteCategory(kat)" 
+                    :disabled="kat.is_system"
+                    :class="kat.is_system ? 'text-slate-300 cursor-not-allowed' : 'text-red-600 hover:bg-red-50'"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors" 
+                    title="Hapus Kategori"
+                  >
                     <i class="fa-solid fa-trash-can"></i>
                   </button>
                 </div>
@@ -60,6 +90,15 @@
             </tr>
           </tbody>
         </table>
+      </div>
+      
+      <div v-if="!isLoading" class="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 bg-slate-50">
+        <div>Menampilkan <span class="font-bold text-slate-700">{{ paginatedCategories.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0 }}</span> hingga <span class="font-bold text-slate-700">{{ Math.min(currentPage * itemsPerPage, filteredCategories.length) }}</span> dari <span class="font-bold text-slate-700">{{ filteredCategories.length }}</span> kategori</div>
+        <div class="flex gap-1">
+          <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white hover:bg-slate-100 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium">Prev</button>
+          <span class="px-3 py-1.5 bg-emerald-600 text-white rounded-md font-bold shadow-sm">{{ currentPage }} / {{ totalPages }}</span>
+          <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white hover:bg-slate-100 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium">Next</button>
+        </div>
       </div>
     </div>
 
@@ -80,7 +119,7 @@
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Kategori</label>
             <input 
-              v-model="formData.title" 
+              v-model="formData.nama" 
               type="text" 
               placeholder="Contoh: Arsip Kurikulum" 
               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm transition-all"
@@ -89,25 +128,9 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Ikon (FontAwesome Class)</label>
-            <div class="flex gap-2">
-              <input 
-                v-model="formData.icon" 
-                type="text" 
-                placeholder="fa-solid fa-folder" 
-                class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm transition-all"
-                required
-              >
-              <div class="w-11 h-11 bg-slate-100 rounded-xl flex items-center justify-center text-emerald-600 border border-slate-200">
-                <i :class="formData.icon"></i>
-              </div>
-            </div>
-          </div>
-
-          <div>
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Deskripsi Singkat</label>
             <textarea 
-              v-model="formData.description" 
+              v-model="formData.deskripsi" 
               rows="3"
               class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm transition-all"
               placeholder="Jelaskan isi kategori ini..."
@@ -124,9 +147,11 @@
             </button>
             <button 
               type="submit"
-              class="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-shadow shadow-md shadow-emerald-100"
+              :disabled="isSaving"
+              class="flex-1 px-4 py-2.5 bg-emerald-600 disabled:bg-slate-400 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-shadow shadow-md shadow-emerald-100 flex items-center justify-center gap-2"
             >
-              Simpan Data
+              <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+              {{ isSaving ? 'Menyimpan...' : 'Simpan Data' }}
             </button>
           </div>
         </form>
@@ -136,47 +161,120 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import pb from '../pb.js'
 
 const showModal = ref(false)
 const isEdit = ref(false)
-const selectedIndex = ref(null)
-
-const categories = ref([
-  { title: 'Dokumen Kepala Sekolah', description: 'Arsip rahasia dan laporan manajerial khusus.', icon: 'fa-solid fa-user-tie', count: 45 },
-  { title: 'Arsip PPDB 2025/2026', description: 'Kumpulan berkas pendaftaran siswa baru.', icon: 'fa-solid fa-users-rectangle', count: 850 },
-  { title: 'Portofolio Guru A', description: 'Dokumen RPP dan sertifikasi guru.', icon: 'fa-solid fa-chalkboard-user', count: 112 },
-])
+const isLoading = ref(true)
+const isSaving = ref(false)
+const searchQuery = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 15
+const categories = ref([])
 
 const formData = ref({
-  title: '',
-  icon: 'fa-solid fa-folder',
-  description: ''
+  id: '',
+  nama: '',
+  deskripsi: ''
+})
+
+const fetchCategories = async () => {
+  isLoading.value = true
+  try {
+    const records = await pb.collection('kategori').getFullList({
+      sort: 'is_system,-created', 
+    })
+    categories.value = records
+  } catch (error) {
+    console.error("Gagal mengambil data kategori:", error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchCategories()
 })
 
 const openModal = (mode, data = null) => {
   isEdit.value = mode === 'edit'
   if (isEdit.value && data) {
-    formData.value = { ...data }
-    selectedIndex.value = categories.value.indexOf(data)
+    formData.value = { id: data.id, nama: data.nama, deskripsi: data.deskripsi }
   } else {
-    formData.value = { title: '', icon: 'fa-solid fa-folder', description: '' }
+    formData.value = { id: '', nama: '', deskripsi: '' }
   }
   showModal.value = true
 }
 
-const saveCategory = () => {
-  if (isEdit.value) {
-    categories.value[selectedIndex.value] = { ...formData.value, count: categories.value[selectedIndex.value].count }
-  } else {
-    categories.value.push({ ...formData.value, count: 0 })
+const saveCategory = async () => {
+  isSaving.value = true
+  try {
+    if (isEdit.value) {
+      await pb.collection('kategori').update(formData.value.id, {
+        nama: formData.value.nama,
+        deskripsi: formData.value.deskripsi
+      })
+    } else {
+      await pb.collection('kategori').create({
+        nama: formData.value.nama,
+        deskripsi: formData.value.deskripsi,
+        is_system: false
+      })
+    }
+    
+    showModal.value = false
+    fetchCategories() 
+  } catch (error) {
+    console.error("Gagal menyimpan kategori:", error)
+    alert("Gagal menyimpan kategori!")
+  } finally {
+    isSaving.value = false
   }
-  showModal.value = false
 }
 
-const deleteCategory = (index) => {
-  if (confirm('Apakah Anda yakin ingin menghapus kategori ini? Semua arsip di dalamnya akan kehilangan label kategorinya.')) {
-    categories.value.splice(index, 1)
+const deleteCategory = async (kat) => {
+  if (kat.is_system) {
+    alert("Kategori bawaan sistem tidak dapat dihapus!")
+    return
+  }
+
+  if (confirm(`Apakah Anda yakin ingin menghapus kategori "${kat.nama}"?`)) {
+    try {
+      await pb.collection('kategori').delete(kat.id)
+      fetchCategories() 
+    } catch (error) {
+      console.error("Gagal menghapus:", error)
+      alert("Gagal menghapus kategori. Pastikan Anda memiliki akses.")
+    }
   }
 }
+
+const filteredCategories = computed(() => {
+  if (!searchQuery.value) return categories.value
+  const q = searchQuery.value.toLowerCase()
+  return categories.value.filter(k => k.nama.toLowerCase().includes(q) || (k.deskripsi && k.deskripsi.toLowerCase().includes(q)))
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredCategories.value.length / itemsPerPage) || 1
+})
+
+const paginatedCategories = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return filteredCategories.value.slice(start, end)
+})
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--
+}
+
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
 </script>

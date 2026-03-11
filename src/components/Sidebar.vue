@@ -25,7 +25,7 @@
         
         <div class="space-y-1">
           <router-link
-            v-for="(item, index) in mainMenu"
+            v-for="(item, index) in filteredMainMenu"
             :key="'main-'+index"
             :to="item.path"
             custom
@@ -48,35 +48,70 @@
           </router-link>
         </div>
 
-        <div class="mt-6 mb-2 border-t border-slate-100 pt-4">
-          <div v-show="isOpen" class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300">
-            Control Admin
+        <div v-if="userRole === 'Petugas Arsip' || userRole === 'Arsiparis'">
+          <div class="mt-6 mb-2 border-t border-slate-100 pt-4">
+            <div v-show="isOpen" class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300">
+              Control Admin
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <router-link
+              v-for="(item, index) in adminMenu"
+              :key="'admin-'+index"
+              :to="item.path"
+              custom
+              v-slot="{ href, navigate, isActive }"
+            >
+              <a
+                :href="href"
+                @click="navigate"
+                :class="[
+                  isActive ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600',
+                  'flex items-center px-3 py-3 rounded-lg font-medium transition-all duration-200 group whitespace-nowrap'
+                ]"
+                :title="!isOpen ? item.name : ''"
+              >
+                <div class="flex items-center justify-center min-w-[24px]">
+                  <i :class="[item.icon, isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600', 'text-lg transition-colors duration-200']"></i>
+                </div>
+                <span v-show="isOpen" class="ml-3 transition-opacity duration-300">{{ item.name }}</span>
+              </a>
+            </router-link>
           </div>
         </div>
 
-        <div class="space-y-1">
-          <router-link
-            v-for="(item, index) in adminMenu"
-            :key="'admin-'+index"
-            :to="item.path"
-            custom
-            v-slot="{ href, navigate, isActive }"
-          >
-            <a
-              :href="href"
-              @click="navigate"
-              :class="[
-                isActive ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600',
-                'flex items-center px-3 py-3 rounded-lg font-medium transition-all duration-200 group whitespace-nowrap'
-              ]"
-              :title="!isOpen ? item.name : ''"
+        <div v-if="userRole === 'Kepala Sekolah'">
+          <div class="mt-6 mb-2 border-t border-slate-100 pt-4">
+            <div v-show="isOpen" class="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 transition-opacity duration-300">
+              Menu Kepala Sekolah
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <router-link
+              v-for="(item, index) in kepsekMenu"
+              :key="'kepsek-'+index"
+              :to="item.path"
+              custom
+              v-slot="{ href, navigate, isActive }"
             >
-              <div class="flex items-center justify-center min-w-[24px]">
-                <i :class="[item.icon, isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600', 'text-lg transition-colors duration-200']"></i>
-              </div>
-              <span v-show="isOpen" class="ml-3 transition-opacity duration-300">{{ item.name }}</span>
-            </a>
-          </router-link>
+              <a
+                :href="href"
+                @click="navigate"
+                :class="[
+                  isActive ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600',
+                  'flex items-center px-3 py-3 rounded-lg font-medium transition-all duration-200 group whitespace-nowrap'
+                ]"
+                :title="!isOpen ? item.name : ''"
+              >
+                <div class="flex items-center justify-center min-w-[24px]">
+                  <i :class="[item.icon, isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-600', 'text-lg transition-colors duration-200']"></i>
+                </div>
+                <span v-show="isOpen" class="ml-3 transition-opacity duration-300">{{ item.name }}</span>
+              </a>
+            </router-link>
+          </div>
         </div>
 
       </nav>
@@ -92,9 +127,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const isOpen = ref(true)
+const userRole = ref(localStorage.getItem('user_role') || 'Staff')
 
 onMounted(() => {
   if (window.innerWidth < 768) {
@@ -106,17 +142,27 @@ const toggleSidebar = () => {
   isOpen.value = !isOpen.value
 }
 
-const mainMenu = ref([
+const baseMainMenu = [
   { name: 'Dashboard', icon: 'fa-solid fa-house', path: '/' },
   { name: 'Manajemen Arsip', icon: 'fa-solid fa-folder-open', path: '/manajemen-arsip' },
   { name: 'Kategori', icon: 'fa-solid fa-layer-group', path: '/kategori' },
   { name: 'Disposisi', icon: 'fa-solid fa-share-nodes', path: '/disposisi' },
-  { name: 'Tongsampah', icon: 'fa-solid fa-trash-can', path: '/tongsampah' },
-  { name: 'Gemini', icon: 'fa-solid fa-wand-magic-sparkles', path: '/gemini' },
-])
+  { name: 'Tong Sampah', icon: 'fa-solid fa-trash-can', path: '/tongsampah' },
+]
+
+const filteredMainMenu = computed(() => {
+  if (userRole.value === 'Kepala Sekolah') {
+    return baseMainMenu.filter(item => item.path !== '/tongsampah');
+  }
+  return baseMainMenu;
+})
 
 const adminMenu = ref([
   { name: 'Manajemen Kategori', icon: 'fa-solid fa-layer-group', path: '/admin-kategori' },
   { name: 'Manajemen Pengguna', icon: 'fa-solid fa-users-gear', path: '/pengguna' },
+])
+
+const kepsekMenu = ref([
+  { name: 'Statistik', icon: 'fa-solid fa-chart-pie', path: '/statistik' },
 ])
 </script>
