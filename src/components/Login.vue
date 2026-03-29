@@ -126,7 +126,7 @@
         
         <div class="mt-auto pt-10 text-center">
           <p class="text-xs font-medium text-slate-400">
-            &copy;2026 SMP NEGERI 1 Pabuaran.<br class="sm:hidden"> Support By <span class="text-slate-600 font-bold"><br>Capstone Project Unsub & Sainzlab Cloud Solution</span>.
+            &copy;2026 SMP NEGERI 1 Pabuaran.<br class="sm:hidden"> Support By <span class="text-slate-600 font-bold"><br>Capstone Project Unsub</span>.
           </p>
         </div>
 
