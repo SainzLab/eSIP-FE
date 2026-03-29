@@ -9,9 +9,6 @@
         <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
         <div class="relative z-10">
-          <!-- <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md text-white mb-6 border border-white/20 shadow-xl">
-            <i class="fa-solid fa-box-archive text-3xl"></i>
-          </div> -->
           <h1 class="text-4xl font-black text-white tracking-tight mb-4 leading-tight">
             Sistem Informasi<br>Pengelolaan Arsip
           </h1>
@@ -110,6 +107,10 @@
             </button>
           </div>
 
+          <div class="flex justify-center my-2">
+             <div class="g-recaptcha transform scale-90 sm:scale-100 origin-center" data-sitekey="6LcVspwsAAAAAKkccK3LbxkXaktO0UUeIF3l7ZSA"></div>
+          </div>
+
           <div class="pt-4">
             <button 
               type="submit" 
@@ -157,7 +158,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import pb from '../pb.js' 
 
@@ -170,12 +171,42 @@ const errorMessage = ref('')
 
 const showForgotModal = ref(false)
 
+onMounted(() => {
+  if (!document.getElementById('recaptcha-script')) {
+    const script = document.createElement('script')
+    script.id = 'recaptcha-script'
+    script.src = 'https://www.google.com/recaptcha/api.js'
+    script.async = true
+    script.defer = true
+    document.head.appendChild(script)
+  }
+})
+
 const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
 
+  let captchaToken = ''
+  if (window.grecaptcha) {
+    captchaToken = grecaptcha.getResponse()
+  }
+
+  if (!captchaToken) {
+    errorMessage.value = "Silakan centang Captcha 'I'm not a robot' terlebih dahulu."
+    isLoading.value = false
+    return
+  }
+
   try {
-    const authData = await pb.collection('users').authWithPassword(email.value, password.value)
+    const authData = await pb.collection('users').authWithPassword(
+      email.value, 
+      password.value,
+      {
+        headers: {
+          'X-Captcha-Token': captchaToken
+        }
+      }
+    )
 
     localStorage.setItem('user_role', authData.record.role)
     localStorage.setItem('user_bidang', authData.record.bidang)
@@ -184,8 +215,12 @@ const handleLogin = async () => {
     router.push('/') 
     
   } catch (error) {
-    errorMessage.value = 'Email atau password yang Anda masukkan salah.'
+    errorMessage.value = error?.response?.message || 'Email atau password yang Anda masukkan salah.'
     console.error("Login Error:", error)
+    
+    if (window.grecaptcha) {
+      grecaptcha.reset()
+    }
   } finally {
     isLoading.value = false
   }
@@ -193,7 +228,6 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
-
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
