@@ -1,3 +1,5 @@
+![Capstone Project Glitch](./glitch.svg)
+
 # 📂 eSIP (Sistem Informasi Pengelolaan Arsip)
 
 ![Vue.js](https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D)
