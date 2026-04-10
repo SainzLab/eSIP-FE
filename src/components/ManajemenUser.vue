@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-6 pb-10">
+  <div class="flex flex-col gap-6 pb-10 relative">
     
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
       <div>
@@ -86,13 +86,13 @@
               </td>
               <td class="py-4 px-6 text-right">
                 <div class="flex justify-end gap-2">
-                  <button @click="resetPassword(user)" class="text-slate-400 hover:text-amber-500 p-1.5 transition-colors" title="Reset Password">
+                  <button @click="openResetModal(user)" class="w-8 h-8 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 flex items-center justify-center transition-colors" title="Reset Password">
                     <i class="fa-solid fa-key"></i>
                   </button>
-                  <button @click="openModal('edit', user)" class="text-slate-400 hover:text-blue-600 p-1.5 transition-colors" title="Edit Akun">
+                  <button @click="openModal('edit', user)" class="w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors" title="Edit Akun">
                     <i class="fa-solid fa-user-pen"></i>
                   </button>
-                  <button @click="deleteUser(user)" class="text-slate-400 hover:text-red-600 p-1.5 transition-colors" title="Hapus Akun">
+                  <button @click="deleteUser(user)" class="w-8 h-8 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors" title="Hapus Akun">
                     <i class="fa-solid fa-user-xmark"></i>
                   </button>
                 </div>
@@ -191,6 +191,64 @@
       </div>
     </div>
 
+    <div v-if="showResetModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showResetModal = false"></div>
+      <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div class="p-6 text-center border-b border-slate-100">
+          <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border-4 border-amber-100">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <h3 class="font-bold text-slate-800 text-lg">Reset Password</h3>
+          <p class="text-xs text-slate-500 mt-1">Ganti password untuk <span class="font-bold text-slate-700">{{ userToReset?.name }}</span></p>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Password Baru</label>
+            <input 
+              v-model="newPasswordInput" 
+              type="text" 
+              placeholder="Minimal 8 karakter" 
+              class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-amber-500 text-sm transition-all"
+            >
+          </div>
+          <p v-if="resetPasswordError" class="text-xs text-red-500 font-bold"><i class="fa-solid fa-circle-exclamation"></i> {{ resetPasswordError }}</p>
+
+          <div class="flex gap-3 pt-2">
+            <button @click="showResetModal = false" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors text-sm">Batal</button>
+            <button @click="confirmResetPassword" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors shadow-md shadow-amber-200 text-sm flex justify-center items-center gap-2">
+              <i v-if="isSaving" class="fa-solid fa-spinner fa-spin"></i>
+              {{ isSaving ? 'Memproses...' : 'Simpan' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showDeleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+      <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border-4 border-red-100">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="font-bold text-slate-800 text-lg mb-2">Hapus Pengguna?</h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+          Apakah Anda yakin ingin menghapus akses untuk <br><span class="font-bold text-slate-700">"{{ itemToDelete?.name }}"</span>?<br>Tindakan ini tidak dapat dibatalkan.
+        </p>
+        <div class="flex gap-3">
+          <button @click="showDeleteModal = false" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">Batal</button>
+          <button @click="confirmDeleteUser" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors shadow-md shadow-red-200">Ya, Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <transition name="toast">
+      <div v-if="notification.show" class="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border" :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'">
+        <i :class="notification.type === 'success' ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-solid fa-circle-exclamation text-red-500'" class="text-xl"></i>
+        <p class="text-sm font-bold">{{ notification.message }}</p>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -204,11 +262,23 @@ const passwordError = ref('')
 const isLoading = ref(true)
 const isSaving = ref(false)
 const searchQuery = ref('') 
-
 const currentPage = ref(1)
 const itemsPerPage = 15
-
 const users = ref([])
+
+const showDeleteModal = ref(false)
+const itemToDelete = ref(null)
+
+const showResetModal = ref(false)
+const userToReset = ref(null)
+const newPasswordInput = ref('')
+const resetPasswordError = ref('')
+
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success'
+})
 
 const formData = ref({ 
   id: '', 
@@ -219,6 +289,13 @@ const formData = ref({
   password: '', 
   confirmPassword: '' 
 })
+
+const showToast = (message, type = 'success') => {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
 
 watch(() => formData.value.role, (newRole) => {
   if (newRole === 'Kepala Sekolah') {
@@ -288,7 +365,7 @@ const saveUser = async () => {
   try {
     if (!isEdit.value) {
       if (formData.value.password !== formData.value.confirmPassword) {
-        passwordError.value = 'Password dan Konfirmasi tidak sama!'
+        passwordError.value = 'Password dan Konfirmasi Password tidak sama!'
         isSaving.value = false
         return
       }
@@ -302,12 +379,14 @@ const saveUser = async () => {
         role: formData.value.role,
         bidang: formData.value.bidang
       })
+      showToast('Pengguna baru berhasil ditambahkan!', 'success')
     } else {
       await pb.collection('users').update(formData.value.id, {
         name: formData.value.name,
         role: formData.value.role,
         bidang: formData.value.bidang
       })
+      showToast('Data pengguna berhasil diperbarui!', 'success')
     }
 
     showModal.value = false
@@ -321,36 +400,55 @@ const saveUser = async () => {
   }
 }
 
-const resetPassword = async (user) => {
-  const newPassword = prompt(`Masukkan password baru untuk ${user.name} (Minimal 8 Karakter):`);
-  
-  if (!newPassword) return; 
-  if (newPassword.trim().length < 8) {
-    alert('Gagal! Password harus minimal 8 karakter.');
-    return;
+const openResetModal = (user) => {
+  userToReset.value = user
+  newPasswordInput.value = ''
+  resetPasswordError.value = ''
+  showResetModal.value = true
+}
+
+const confirmResetPassword = async () => {
+  if (newPasswordInput.value.trim().length < 8) {
+    resetPasswordError.value = 'Password harus minimal 8 karakter.'
+    return
   }
 
+  isSaving.value = true
+  resetPasswordError.value = ''
+
   try {
-    await pb.collection('users').update(user.id, {
-      password: newPassword,
-      passwordConfirm: newPassword
+    await pb.collection('users').update(userToReset.value.id, {
+      password: newPasswordInput.value,
+      passwordConfirm: newPasswordInput.value
     })
-    alert(`Berhasil! Password untuk ${user.name} telah direset.`);
+    showToast(`Password untuk ${userToReset.value.name} telah direset.`, 'success')
+    showResetModal.value = false
   } catch (error) {
     console.error("Gagal reset password:", error)
-    alert('Terjadi kesalahan saat mereset password. Pastikan API Rules di PocketBase sudah disetting.');
+    resetPasswordError.value = 'Gagal! Server sedang Sibuk.'
+  } finally {
+    isSaving.value = false
   }
 }
 
-const deleteUser = async (user) => {
-  if (confirm(`Apakah Anda yakin ingin menghapus akses sistem untuk ${user.name}?`)) {
-    try {
-      await pb.collection('users').delete(user.id)
-      fetchUsers() 
-    } catch (error) {
-      console.error("Gagal menghapus:", error)
-      alert('Gagal menghapus pengguna. Cek izin API Rules di PocketBase.')
-    }
+const deleteUser = (user) => {
+  itemToDelete.value = user
+  showDeleteModal.value = true
+}
+
+const confirmDeleteUser = async () => {
+  if (!itemToDelete.value) return
+
+  try {
+    await pb.collection('users').delete(itemToDelete.value.id)
+    fetchUsers() 
+    showToast('Akses pengguna berhasil dihapus.', 'success')
+  } catch (error) {
+    console.error("Gagal menghapus:", error)
+    showToast('Gagal menghapus pengguna. Cek izin API Rules.', 'error')
+  } finally {
+    showDeleteModal.value = false
+    itemToDelete.value = null
   }
 }
 
@@ -385,5 +483,16 @@ const prevPage = () => {
 watch(searchQuery, () => {
   currentPage.value = 1
 })
-
 </script>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+</style>

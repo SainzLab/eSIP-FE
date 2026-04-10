@@ -106,7 +106,7 @@
       <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showModal = false"></div>
       
       <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h3 class="font-bold text-slate-800 text-lg">
             {{ isEdit ? 'Edit Kategori' : 'Tambah Kategori Baru' }}
           </h3>
@@ -157,6 +157,31 @@
         </form>
       </div>
     </div>
+
+    <div v-if="showDeleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+      <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border-4 border-red-100">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="font-bold text-slate-800 text-lg mb-2">Hapus Kategori?</h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+          Apakah Anda yakin ingin menghapus kategori <br><span class="font-bold text-slate-700">"{{ itemToDelete?.nama }}"</span>?<br>
+        </p>
+        <div class="flex gap-3">
+          <button @click="showDeleteModal = false" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">Batal</button>
+          <button @click="confirmDelete" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors shadow-md shadow-red-200">Ya, Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <transition name="toast">
+      <div v-if="notification.show" class="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border" :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'">
+        <i :class="notification.type === 'success' ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-solid fa-circle-exclamation text-red-500'" class="text-xl"></i>
+        <p class="text-sm font-bold">{{ notification.message }}</p>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -165,6 +190,8 @@ import { ref, onMounted, computed, watch } from 'vue'
 import pb from '../pb.js'
 
 const showModal = ref(false)
+const showDeleteModal = ref(false) 
+const itemToDelete = ref(null)
 const isEdit = ref(false)
 const isLoading = ref(true)
 const isSaving = ref(false)
@@ -173,11 +200,24 @@ const currentPage = ref(1)
 const itemsPerPage = 15
 const categories = ref([])
 
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success'
+})
+
 const formData = ref({
   id: '',
   nama: '',
   deskripsi: ''
 })
+
+const showToast = (message, type = 'success') => {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
 
 const fetchCategories = async () => {
   isLoading.value = true
@@ -215,38 +255,49 @@ const saveCategory = async () => {
         nama: formData.value.nama,
         deskripsi: formData.value.deskripsi
       })
+      showToast('Kategori berhasil diperbarui!', 'success')
     } else {
       await pb.collection('kategori').create({
         nama: formData.value.nama,
         deskripsi: formData.value.deskripsi,
         is_system: false
       })
+      showToast('Kategori baru berhasil ditambahkan!', 'success')
     }
     
     showModal.value = false
     fetchCategories() 
   } catch (error) {
     console.error("Gagal menyimpan kategori:", error)
-    alert("Gagal menyimpan kategori!")
+    showToast('Gagal menyimpan data kategori!', 'error')
   } finally {
     isSaving.value = false
   }
 }
 
-const deleteCategory = async (kat) => {
-  if (kat.is_system) {
-    alert("Kategori bawaan sistem tidak dapat dihapus!")
-    return
-  }
+const deleteCategory = (kat) => {
+  // if (kat.is_system) {
+  //   showToast("Kategori bawaan sistem tidak dapat dihapus!", 'error')
+  //   return
+  // }
 
-  if (confirm(`Apakah Anda yakin ingin menghapus kategori "${kat.nama}"?`)) {
-    try {
-      await pb.collection('kategori').delete(kat.id)
-      fetchCategories() 
-    } catch (error) {
-      console.error("Gagal menghapus:", error)
-      alert("Gagal menghapus kategori. Pastikan Anda memiliki akses.")
-    }
+  itemToDelete.value = kat
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!itemToDelete.value) return
+
+  try {
+    await pb.collection('kategori').delete(itemToDelete.value.id)
+    fetchCategories() 
+    showToast('Kategori berhasil dihapus.', 'success')
+  } catch (error) {
+    console.error("Gagal menghapus:", error)
+    showToast('Gagal menghapus kategori. Pastikan Anda memiliki akses.', 'error')
+  } finally {
+    showDeleteModal.value = false
+    itemToDelete.value = null
   }
 }
 
@@ -278,3 +329,15 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 </script>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+</style>

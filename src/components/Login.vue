@@ -19,7 +19,7 @@
 
         <div class="relative z-10">
           <div class="flex items-center gap-4 bg-white/10 backdrop-blur-sm border border-white/10 p-4 rounded-2xl w-fit">
-            <div class="w-15 h-15 bg-white rounded-full flex items-center justify-center shadow-inner overflow-hidden p-1">
+            <div class="w-16 h-16 rounded-full flex items-center justify-center shadow-inner overflow-hidden p-1">
               <img src="/pct1.png" alt="Logo SMPN 1 Pabuaran" class="w-full h-full object-contain">
             </div>
             <div>

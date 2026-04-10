@@ -223,6 +223,30 @@
       </div>
     </div>
 
+    <div v-if="showDeleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+      <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border-4 border-red-100">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="font-bold text-slate-800 text-lg mb-2">Pindahkan Dokumen?</h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+          Apakah Anda yakin ingin memindahkan dokumen <br><span class="font-bold text-slate-700">"{{ itemToDelete?.judul }}"</span><br> ke Tong Sampah?
+        </p>
+        <div class="flex gap-3">
+          <button @click="showDeleteModal = false" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">Batal</button>
+          <button @click="confirmDelete" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors shadow-md shadow-red-200">Ya, Pindahkan</button>
+        </div>
+      </div>
+    </div>
+
+    <transition name="toast">
+      <div v-if="notification.show" class="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border" :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'">
+        <i :class="notification.type === 'success' ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-solid fa-circle-exclamation text-red-500'" class="text-xl"></i>
+        <p class="text-sm font-bold">{{ notification.message }}</p>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -235,10 +259,19 @@ const userBidang = ref(localStorage.getItem('user_bidang') || 'Tata Usaha')
 const userId = ref(pb.authStore.model?.id)
 
 const showModal = ref(false)
+const showDeleteModal = ref(false)
+const itemToDelete = ref(null)
+
 const isEdit = ref(false)
 const isLoading = ref(true)
 const isSaving = ref(false)
 const searchQuery = ref('') 
+
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success'
+})
 
 const arsipList = ref([])
 const kategoriOptions = ref([])
@@ -255,6 +288,13 @@ const formData = ref({
   kategori_id: '',
   bidang: userBidang.value
 })
+
+const showToast = (message, type = 'success') => {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
 
 const formatDate = (dateString) => {
   if (!dateString) return '-'
@@ -363,25 +403,35 @@ const saveArsip = async () => {
     }
     showModal.value = false
     fetchData() 
+    showToast(isEdit.value ? 'Arsip berhasil diperbarui!' : 'Arsip baru berhasil diunggah!', 'success') 
   } catch (error) {
     console.error("Gagal menyimpan arsip:", error)
-    alert("Terjadi kesalahan saat mengunggah dokumen.")
+    showToast('Terjadi kesalahan saat menyimpan dokumen.', 'error')
   } finally {
     isSaving.value = false
   }
 }
 
-const deleteArsip = async (arsip) => {
-  if (confirm(`Pindahkan dokumen "${arsip.judul}" ke Tong Sampah?`)) {
-    try {
-      await pb.collection('arsip').update(arsip.id, {
-        is_deleted: true
-      })
-      fetchData() 
-    } catch (error) {
-      console.error("Gagal menghapus:", error)
-      alert("Gagal memindahkan dokumen.")
-    }
+const deleteArsip = (arsip) => {
+  itemToDelete.value = arsip
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!itemToDelete.value) return
+  
+  try {
+    await pb.collection('arsip').update(itemToDelete.value.id, {
+      is_deleted: true
+    })
+    fetchData() 
+    showToast('Dokumen berhasil dipindahkan ke Tong Sampah.', 'success')
+  } catch (error) {
+    console.error("Gagal menghapus:", error)
+    showToast('Gagal memindahkan dokumen ke Tong Sampah.', 'error')
+  } finally {
+    showDeleteModal.value = false
+    itemToDelete.value = null
   }
 }
 
@@ -407,3 +457,15 @@ const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
 
 watch(searchQuery, () => { currentPage.value = 1 })
 </script>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+</style>

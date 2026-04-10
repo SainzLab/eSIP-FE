@@ -103,7 +103,7 @@
                     <i class="fa-solid fa-check"></i>
                   </button>
 
-                  <button v-if="(userRole === 'Petugas Arsip' || userRole === 'Arsiparis')" @click="hapusDisposisi(item.id)" class="w-8 h-8 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors" title="Batalkan Disposisi">
+                  <button v-if="(userRole === 'Petugas Arsip' || userRole === 'Arsiparis')" @click="hapusDisposisi(item)" class="w-8 h-8 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors" title="Batalkan Disposisi">
                     <i class="fa-solid fa-trash-can"></i>
                   </button>
                 </div>
@@ -144,7 +144,7 @@
                 {{ arsip.no_surat || 'Tanpa No' }} - {{ arsip.judul }}
               </option>
             </select>
-            <p v-if="userRole !== 'Kepala Sekolah'" class="text-xs text-amber-600 mt-2"><i class="fa-solid fa-info-circle"></i> Surat akan otomatis diteruskan ke meja Pimpinan untuk menunggu instruksi.</p>
+            <p v-if="userRole !== 'Kepala Sekolah'" class="text-xs text-amber-600 mt-2"><i class="fa-solid fa-info-circle"></i> Surat akan otomatis diteruskan ke Pimpinan untuk menunggu instruksi.</p>
           </div>
 
           <div v-if="modalMode === 'forward' || modalMode === 'edit' || (modalMode === 'create' && userRole === 'Kepala Sekolah')">
@@ -196,6 +196,36 @@
       </div>
     </div>
 
+    <div v-if="showConfirmModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showConfirmModal = false"></div>
+      <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div :class="confirmAction === 'delete' ? 'bg-red-50 text-red-500 border-red-100' : 'bg-emerald-50 text-emerald-500 border-emerald-100'" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border-4">
+          <i :class="confirmAction === 'delete' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check'"></i>
+        </div>
+        <h3 class="font-bold text-slate-800 text-lg mb-2">
+          {{ confirmAction === 'delete' ? 'Cabut Disposisi?' : 'Selesaikan Instruksi?' }}
+        </h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+          {{ confirmAction === 'delete' 
+             ? 'Apakah Anda yakin ingin mencabut dan menghapus lembar disposisi ini?' 
+             : 'Apakah instruksi pimpinan pada surat ini sudah Anda selesaikan?' }}
+        </p>
+        <div class="flex gap-3">
+          <button @click="showConfirmModal = false" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">Batal</button>
+          <button @click="executeConfirm" :class="confirmAction === 'delete' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'" class="flex-1 py-2.5 text-white font-bold rounded-lg transition-colors shadow-md">
+            {{ confirmAction === 'delete' ? 'Ya, Cabut' : 'Ya, Selesai' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <transition name="toast">
+      <div v-if="notification.show" class="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border" :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'">
+        <i :class="notification.type === 'success' ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-solid fa-circle-exclamation text-red-500'" class="text-xl"></i>
+        <p class="text-sm font-bold">{{ notification.message }}</p>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -212,6 +242,16 @@ const showModal = ref(false)
 const modalMode = ref('create') 
 const searchQuery = ref('')
 
+const showConfirmModal = ref(false)
+const confirmAction = ref('')
+const itemToConfirm = ref(null)
+
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success'
+})
+
 const currentPage = ref(1)
 const itemsPerPage = 15
 
@@ -227,6 +267,13 @@ const formData = ref({
   batas_waktu: '',
   status: 'Menunggu Instruksi'
 })
+
+const showToast = (message, type = 'success') => {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
 
 const getSifatClass = (sifat) => {
   switch(sifat) {
@@ -340,14 +387,16 @@ const saveDisposisi = async () => {
           batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
           status: 'Diproses'
         })
+        showToast('Disposisi baru berhasil dibuat!', 'success')
       } else {
         await pb.collection('disposisi').create({
           arsip_id: formData.value.arsip_id,
           tujuan_bidang: 'Pimpinan',
           status: 'Menunggu Instruksi'
         })
+        showToast('Surat berhasil diteruskan ke meja Pimpinan.', 'success')
       }
-    } else if (modalMode.value === 'forward' || modalMode.value === 'edit') {
+    } else if (modalMode.value === 'forward') {
       await pb.collection('disposisi').update(formData.value.id, {
         tujuan_bidang: formData.value.tujuan_bidang,
         instruksi: formData.value.instruksi,
@@ -355,37 +404,59 @@ const saveDisposisi = async () => {
         batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
         status: formData.value.status 
       })
+      showToast('Instruksi pimpinan berhasil diteruskan ke bidang!', 'success')
+    } else if (modalMode.value === 'edit') {
+      await pb.collection('disposisi').update(formData.value.id, {
+        tujuan_bidang: formData.value.tujuan_bidang,
+        instruksi: formData.value.instruksi,
+        sifat: formData.value.sifat,
+        batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
+        status: formData.value.status 
+      })
+      showToast('Instruksi disposisi berhasil diperbarui!', 'success')
     }
     showModal.value = false
     fetchDisposisi() 
   } catch (error) {
     console.error("Gagal menyimpan disposisi:", error)
-    alert("Terjadi kesalahan saat menyimpan data.")
+    showToast('Terjadi kesalahan saat menyimpan data.', 'error')
   } finally {
     isSaving.value = false
   }
 }
 
-const selesaikanDisposisi = async (item) => {
-  if (confirm(`Apakah instruksi pimpinan pada surat ini sudah diselesaikan?`)) {
-    try {
-      await pb.collection('disposisi').update(item.id, {
-        status: 'Selesai'
-      })
-      fetchDisposisi()
-    } catch (error) {
-      console.error(error)
-      alert("Gagal memperbarui status.")
-    }
-  }
+const selesaikanDisposisi = (item) => {
+  itemToConfirm.value = item
+  confirmAction.value = 'complete'
+  showConfirmModal.value = true
 }
 
-const hapusDisposisi = async (id) => {
-  if (confirm('Cabut lembar disposisi ini?')) {
-    try {
-      await pb.collection('disposisi').delete(id)
-      fetchDisposisi()
-    } catch (e) { console.error(e) }
+const hapusDisposisi = (item) => {
+  itemToConfirm.value = item
+  confirmAction.value = 'delete'
+  showConfirmModal.value = true
+}
+
+const executeConfirm = async () => {
+  if (!itemToConfirm.value) return
+  
+  try {
+    if (confirmAction.value === 'complete') {
+      await pb.collection('disposisi').update(itemToConfirm.value.id, {
+        status: 'Selesai'
+      })
+      showToast('Status disposisi berhasil ditandai Selesai!', 'success')
+    } else if (confirmAction.value === 'delete') {
+      await pb.collection('disposisi').delete(itemToConfirm.value.id)
+      showToast('Lembar disposisi berhasil dicabut.', 'success')
+    }
+    fetchDisposisi()
+  } catch (error) {
+    console.error(error)
+    showToast(`Gagal ${confirmAction.value === 'delete' ? 'mencabut' : 'menyelesaikan'} disposisi.`, 'error')
+  } finally {
+    showConfirmModal.value = false
+    itemToConfirm.value = null
   }
 }
 
@@ -436,3 +507,15 @@ watch(searchQuery, () => {
   currentPage.value = 1
 })
 </script>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+</style>
