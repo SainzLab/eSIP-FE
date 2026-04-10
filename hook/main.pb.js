@@ -33,15 +33,45 @@ routerAdd("POST", "/api/tanya-ai", (c) => {
     }
 }, $apis.requireRecordAuth());
 
-//generate gemini 
+routerAdd("POST", "/api/admin/reset-password", (c) => {
+    const data = $apis.requestInfo(c).data;
+    const targetUserId = data.targetUserId;
+    const newPassword = data.newPassword;
+
+    const currentUser = c.get("authRecord");
+
+    const userRole = currentUser ? currentUser.get("role") : "";
+    
+    if (userRole !== "Petugas Arsip" && userRole !== "Kepala Sekolah") {
+        throw new ForbiddenError("Akses ditolak! Hanya Petugas Arsip atau Kepala Sekolah yang dapat mereset password.");
+    }
+
+    if (!targetUserId || !newPassword) {
+        throw new BadRequestError("ID User dan Password Baru tidak boleh kosong.");
+    }
+
+    try {
+        const record = $app.dao().findRecordById("users", targetUserId);
+
+        record.setPassword(newPassword);
+
+        $app.dao().saveRecord(record);
+
+        return c.json(200, { "message": "Password berhasil direset" });
+    } catch (err) {
+        throw new BadRequestError("Gagal mereset password: " + err.message);
+    }
+}, $apis.requireRecordAuth("users"));
+
 onRecordAuthWithPasswordRequest((e) => {
     const captchaToken = e.httpContext.request().header.get("X-Captcha-Token");
 
     if (!captchaToken) {
         throw new BadRequestError("Token Captcha tidak ditemukan. Silakan centang captcha terlebih dahulu.");
     }
-
+    //note kata gemini ganti token pas production
     const secretKey = "6LcVspwsAAAAANZEdXbrRN9cOrsPZL_noTlzj3563"; 
+
     const res = $http.send({
         url: "https://www.google.com/recaptcha/api/siteverify",
         method: "POST",
@@ -56,4 +86,3 @@ onRecordAuthWithPasswordRequest((e) => {
     }
 
 }, "users");
-//generate gemini 

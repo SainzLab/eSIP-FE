@@ -417,15 +417,19 @@ const confirmResetPassword = async () => {
   resetPasswordError.value = ''
 
   try {
-    await pb.collection('users').update(userToReset.value.id, {
-      password: newPasswordInput.value,
-      passwordConfirm: newPasswordInput.value
+    await pb.send('/api/admin/reset-password', {
+      method: 'POST',
+      body: {
+        targetUserId: userToReset.value.id,
+        newPassword: newPasswordInput.value
+      }
     })
+    
     showToast(`Password untuk ${userToReset.value.name} telah direset.`, 'success')
     showResetModal.value = false
   } catch (error) {
     console.error("Gagal reset password:", error)
-    resetPasswordError.value = 'Gagal! Server sedang Sibuk.'
+    resetPasswordError.value = error?.response?.message || 'Gagal mereset password.'
   } finally {
     isSaving.value = false
   }
