@@ -90,15 +90,15 @@
 
 <script setup>
 import { ref, nextTick } from 'vue'
+import PocketBase from 'pocketbase' 
+
+const pb = new PocketBase('http://192.168.8.10:8083')
 
 const isOpen = ref(false)
 const userInput = ref('')
 const chatHistory = ref([])
 const isLoading = ref(false)
 const chatContainer = ref(null)
-
-// GANTI DENGAN API KEY GEMINI
-const API_KEY = "MASUKKAN_API_KEY_GEMINI_DISINI" 
 
 const scrollToBottom = async () => {
   await nextTick()
@@ -117,20 +117,32 @@ const sendMessage = async () => {
   scrollToBottom()
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+    // const response = await fetch('/tanya-ai',
+    const response = await fetch('http://192.168.8.10:8083/api/tanya-ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': pb.authStore.token 
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: userText }] }]
+        prompt: userText
       })
     })
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json()
-    const aiResponse = data.candidates[0].content.parts[0].text
+    const aiResponse = data.reply 
     
     chatHistory.value.push({ role: 'model', text: aiResponse })
   } catch (error) {
-    chatHistory.value.push({ role: 'model', text: "Maaf, Server sedang sibuk. coba beberapa saat lagi :)" })
+    chatHistory.value.push({ 
+      role: 'model', 
+      text: "Maaf, Asisten sedang mengalami gangguan saat terhubung ke server eSIP. Coba beberapa saat lagi :)" 
+    })
+    console.error("PocketBase Hook Error:", error)
   } finally {
     isLoading.value = false
     scrollToBottom()
