@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.4",
+    "dependency-cruiser": "^17.3.10",
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.6"
   },
