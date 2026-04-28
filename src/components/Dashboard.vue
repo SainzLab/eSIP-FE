@@ -54,11 +54,15 @@ const formatNumber = (num) => {
 
 const fetchDashboardStats = async () => {
   try {
-    const users = await pb.collection('users').getList(1, 1)
+    let filterUser = ''
+    if (userRole.value !== 'Arsiparis' && userRole.value !== 'Petugas Arsip' && userRole.value !== 'Kepala Sekolah') {
+      filterUser = `bidang = "${userBidang.value}"`
+    }
+    
+    const users = await pb.collection('users').getList(1, 1, { filter: filterUser })
     statPengguna.value = users.totalItems
 
     let filterArsip = 'is_deleted != true'
-    
     if (userRole.value !== 'Arsiparis' && userRole.value !== 'Petugas Arsip' && userRole.value !== 'Kepala Sekolah') {
       filterArsip += ` && bidang = "${userBidang.value}"`
     }

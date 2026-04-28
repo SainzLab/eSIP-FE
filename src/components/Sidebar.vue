@@ -14,8 +14,8 @@
     <div class="w-full h-full bg-white border-r border-slate-200 flex flex-col overflow-hidden">
       <div class="h-16 flex items-center px-4 border-b border-slate-200 shrink-0 whitespace-nowrap">
         <div class="font-bold text-2xl flex items-center gap-3 w-full" :class="!isOpen && 'md:justify-center'">
-          <div class="bg-blue-600 text-white min-w-[32px] w-8 h-8 flex items-center justify-center rounded-lg shadow-sm">
-            <i class="fa-solid fa-box-archive text-sm"></i>
+          <div class="min-w-[32px] w-12 h-12 flex items-center justify-center">
+            <img src="/pct1.png" alt="Logo SMPN 1 Pabuaran" class="w-full h-full object-contain">
           </div>
           <span v-show="isOpen" class="text-blue-600 transition-opacity duration-300">eSIP</span>
         </div>

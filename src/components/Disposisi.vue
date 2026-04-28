@@ -14,17 +14,46 @@
       </button>
     </div>
 
-    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">
-      <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-        <div class="relative w-full sm:w-80">
-          <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input 
-            v-model="searchQuery"
-            type="text" 
-            placeholder="Cari perihal surat atau instruksi..." 
-            class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500 text-sm"
-          >
-        </div>
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-4">
+      <div class="relative w-full md:w-96">
+        <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input 
+          v-model="searchQuery"
+          type="text" 
+          placeholder="Cari perihal surat atau instruksi..." 
+          class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm transition-all"
+        >
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+        <button 
+          @click="activeTab = 'Semua'" 
+          :class="activeTab === 'Semua' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'" 
+          class="px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2"
+        >
+          <i class="fa-solid fa-layer-group"></i> Semua Disposisi
+        </button>
+        <button 
+          @click="activeTab = 'Menunggu Instruksi'" 
+          :class="activeTab === 'Menunggu Instruksi' ? 'bg-slate-700 text-white shadow-md shadow-slate-200' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'" 
+          class="px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2"
+        >
+          <i class="fa-solid fa-hourglass-half"></i> Menunggu Instruksi
+        </button>
+        <button 
+          @click="activeTab = 'Diproses'" 
+          :class="activeTab === 'Diproses' ? 'bg-amber-500 text-white shadow-md shadow-amber-200' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'" 
+          class="px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2"
+        >
+          <i class="fa-solid fa-spinner"></i> Sedang Diproses
+        </button>
+        <button 
+          @click="activeTab = 'Selesai'" 
+          :class="activeTab === 'Selesai' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'" 
+          class="px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2"
+        >
+          <i class="fa-solid fa-check-double"></i> Selesai
+        </button>
       </div>
     </div>
 
@@ -46,12 +75,17 @@
             <tr><td colspan="6" class="py-10 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>Memuat disposisi...</td></tr>
           </tbody>
           <tbody v-else-if="paginatedDisposisi.length === 0">
-            <tr><td colspan="6" class="py-10 text-center text-slate-400">Belum ada data disposisi yang relevan.</td></tr>
+            <tr>
+              <td colspan="6" class="py-16 text-center">
+                <div class="text-slate-300 mb-3 text-4xl"><i class="fa-solid fa-folder-open"></i></div>
+                <div class="text-slate-500 font-medium">Tidak ada data disposisi di tab "{{ activeTab }}".</div>
+              </td>
+            </tr>
           </tbody>
 
           <tbody v-else class="text-sm divide-y divide-slate-100">
-            <tr v-for="(item, index) in paginatedDisposisi" :key="item.id" class="hover:bg-slate-50 transition-colors group" :class="item.status === 'Selesai' ? 'opacity-60' : ''">
-              <td class="py-4 px-4 text-center text-slate-500">
+            <tr v-for="(item, index) in paginatedDisposisi" :key="item.id" class="hover:bg-slate-50 transition-colors group" :class="item.status === 'Selesai' ? 'opacity-60 bg-slate-50/50' : ''">
+              <td class="py-4 px-4 text-center text-slate-500 font-medium">
                 {{ (currentPage - 1) * itemsPerPage + index + 1 }}
               </td>
               
@@ -59,35 +93,38 @@
                 <div class="flex flex-col">
                   <span class="font-bold text-slate-800">{{ item.expand?.arsip_id?.no_surat || 'Tanpa Nomor' }}</span>
                   <span class="text-xs text-slate-500 mb-1">{{ item.expand?.arsip_id?.judul }}</span>
-                  <span v-if="item.instruksi" class="text-xs text-indigo-600 font-medium bg-indigo-50 p-1.5 rounded border border-indigo-100 mt-1">
+                  <span v-if="item.instruksi" class="text-xs text-indigo-700 font-medium bg-indigo-50 p-2 rounded-lg border border-indigo-100 mt-1 inline-block w-fit">
                     <i class="fa-solid fa-comment-dots mr-1"></i> "{{ item.instruksi }}"
                   </span>
                 </div>
               </td>
               
               <td class="py-4 px-4 text-slate-600 font-bold uppercase text-xs tracking-wider">
-                <i class="fa-solid fa-building text-slate-400 mr-1"></i> {{ item.tujuan_bidang }}
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded bg-slate-100 flex items-center justify-center"><i class="fa-solid fa-building text-slate-400"></i></div>
+                  {{ item.tujuan_bidang }}
+                </div>
               </td>
               
               <td class="py-4 px-4 text-center">
                 <div class="flex flex-col items-center gap-1">
-                  <span v-if="item.sifat" :class="getSifatClass(item.sifat)" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                  <span v-if="item.sifat" :class="getSifatClass(item.sifat)" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border">
                     {{ item.sifat }}
                   </span>
                   <span v-else class="text-slate-400 text-xs">-</span>
-                  <span class="text-slate-500 text-xs font-medium">{{ formatDate(item.batas_waktu) }}</span>
+                  <span class="text-slate-500 text-xs font-medium"><i class="fa-regular fa-calendar mr-1"></i> {{ formatDate(item.batas_waktu) }}</span>
                 </div>
               </td>
 
               <td class="py-4 px-4 text-center">
-                <span :class="getStatusClass(item.status)" class="px-3 py-1 rounded-full text-xs font-bold border">
+                <span :class="getStatusClass(item.status)" class="px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap">
                   {{ item.status }}
                 </span>
               </td>
 
               <td class="py-4 px-4 text-center">
                 <div class="flex items-center justify-center gap-2">
-                  <a v-if="item.expand?.arsip_id?.file_dokumen" :href="getFileUrl(item.expand.arsip_id)" target="_blank" class="w-8 h-8 rounded bg-slate-100 text-slate-500 hover:text-blue-600 flex items-center justify-center transition-colors" title="Lihat Surat">
+                  <a v-if="item.expand?.arsip_id?.file_dokumen" :href="getFileUrl(item.expand.arsip_id)" target="_blank" class="w-8 h-8 rounded bg-slate-100 text-slate-500 hover:text-blue-600 flex items-center justify-center transition-colors border border-slate-200 hover:border-blue-200 hover:bg-blue-50" title="Lihat Surat">
                     <i class="fa-solid fa-file-pdf"></i>
                   </a>
 
@@ -103,7 +140,7 @@
                     <i class="fa-solid fa-check"></i>
                   </button>
 
-                  <button v-if="(userRole === 'Petugas Arsip' || userRole === 'Arsiparis')" @click="hapusDisposisi(item.id)" class="w-8 h-8 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors" title="Batalkan Disposisi">
+                  <button v-if="(userRole === 'Petugas Arsip' || userRole === 'Arsiparis')" @click="hapusDisposisi(item)" class="w-8 h-8 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors" title="Batalkan Disposisi">
                     <i class="fa-solid fa-trash-can"></i>
                   </button>
                 </div>
@@ -113,8 +150,8 @@
         </table>
       </div>
 
-      <div class="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 bg-slate-50">
-        <div>Menampilkan <span class="font-bold text-slate-700">{{ paginatedDisposisi.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0 }}</span> hingga <span class="font-bold text-slate-700">{{ Math.min(currentPage * itemsPerPage, sortedDisposisi.length) }}</span> dari <span class="font-bold text-slate-700">{{ sortedDisposisi.length }}</span> disposisi</div>
+      <div class="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 bg-slate-50/50">
+        <div>Menampilkan <span class="font-bold text-slate-700">{{ paginatedDisposisi.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0 }}</span> hingga <span class="font-bold text-slate-700">{{ Math.min(currentPage * itemsPerPage, sortedDisposisi.length) }}</span> dari <span class="font-bold text-slate-700">{{ sortedDisposisi.length }}</span> data</div>
         <div class="flex gap-1">
           <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1.5 border border-slate-200 rounded-md bg-white hover:bg-slate-100 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm font-medium">Prev</button>
           <span class="px-3 py-1.5 bg-indigo-600 text-white rounded-md font-bold shadow-sm">{{ currentPage }} / {{ totalPages }}</span>
@@ -144,7 +181,7 @@
                 {{ arsip.no_surat || 'Tanpa No' }} - {{ arsip.judul }}
               </option>
             </select>
-            <p v-if="userRole !== 'Kepala Sekolah'" class="text-xs text-amber-600 mt-2"><i class="fa-solid fa-info-circle"></i> Surat akan otomatis diteruskan ke meja Pimpinan untuk menunggu instruksi.</p>
+            <p v-if="userRole !== 'Kepala Sekolah'" class="text-xs text-amber-600 mt-2"><i class="fa-solid fa-info-circle"></i> Surat akan otomatis diteruskan ke Pimpinan untuk menunggu instruksi.</p>
           </div>
 
           <div v-if="modalMode === 'forward' || modalMode === 'edit' || (modalMode === 'create' && userRole === 'Kepala Sekolah')">
@@ -196,6 +233,36 @@
       </div>
     </div>
 
+    <div v-if="showConfirmModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showConfirmModal = false"></div>
+      <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        <div :class="confirmAction === 'delete' ? 'bg-red-50 text-red-500 border-red-100' : 'bg-emerald-50 text-emerald-500 border-emerald-100'" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border-4">
+          <i :class="confirmAction === 'delete' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-check'"></i>
+        </div>
+        <h3 class="font-bold text-slate-800 text-lg mb-2">
+          {{ confirmAction === 'delete' ? 'Cabut Disposisi?' : 'Selesaikan Instruksi?' }}
+        </h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+          {{ confirmAction === 'delete' 
+             ? 'Apakah Anda yakin ingin mencabut dan menghapus lembar disposisi ini?' 
+             : 'Apakah instruksi pimpinan pada surat ini sudah Anda selesaikan?' }}
+        </p>
+        <div class="flex gap-3">
+          <button @click="showConfirmModal = false" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">Batal</button>
+          <button @click="executeConfirm" :class="confirmAction === 'delete' ? 'bg-red-600 hover:bg-red-700 shadow-red-200' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200'" class="flex-1 py-2.5 text-white font-bold rounded-lg transition-colors shadow-md">
+            {{ confirmAction === 'delete' ? 'Ya, Cabut' : 'Ya, Selesai' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <transition name="toast">
+      <div v-if="notification.show" class="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border" :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'">
+        <i :class="notification.type === 'success' ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-solid fa-circle-exclamation text-red-500'" class="text-xl"></i>
+        <p class="text-sm font-bold">{{ notification.message }}</p>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -211,6 +278,17 @@ const isSaving = ref(false)
 const showModal = ref(false)
 const modalMode = ref('create') 
 const searchQuery = ref('')
+const activeTab = ref('Semua')
+
+const showConfirmModal = ref(false)
+const confirmAction = ref('')
+const itemToConfirm = ref(null)
+
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success'
+})
 
 const currentPage = ref(1)
 const itemsPerPage = 15
@@ -228,20 +306,27 @@ const formData = ref({
   status: 'Menunggu Instruksi'
 })
 
+const showToast = (message, type = 'success') => {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
+
 const getSifatClass = (sifat) => {
   switch(sifat) {
-    case 'Segera': return 'bg-red-100 text-red-700'
-    case 'Penting': return 'bg-blue-100 text-blue-700'
-    case 'Rahasia': return 'bg-purple-100 text-purple-700'
-    default: return 'bg-slate-100 text-slate-600'
+    case 'Segera': return 'bg-red-100 text-red-700 border-red-200'
+    case 'Penting': return 'bg-blue-100 text-blue-700 border-blue-200'
+    case 'Rahasia': return 'bg-purple-100 text-purple-700 border-purple-200'
+    default: return 'bg-slate-100 text-slate-600 border-slate-200'
   }
 }
 
 const getStatusClass = (status) => {
   switch(status) {
-    case 'Menunggu Instruksi': return 'bg-slate-50 text-slate-600 border-slate-200'
-    case 'Diproses': return 'bg-amber-50 text-amber-600 border-amber-200'
-    case 'Selesai': return 'bg-emerald-50 text-emerald-600 border-emerald-200'
+    case 'Menunggu Instruksi': return 'bg-slate-100 text-slate-700 border-slate-300'
+    case 'Diproses': return 'bg-amber-100 text-amber-700 border-amber-300'
+    case 'Selesai': return 'bg-emerald-100 text-emerald-700 border-emerald-300'
     default: return 'bg-slate-50 text-slate-600 border-slate-200'
   }
 }
@@ -340,14 +425,16 @@ const saveDisposisi = async () => {
           batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
           status: 'Diproses'
         })
+        showToast('Disposisi baru berhasil dibuat!', 'success')
       } else {
         await pb.collection('disposisi').create({
           arsip_id: formData.value.arsip_id,
           tujuan_bidang: 'Pimpinan',
           status: 'Menunggu Instruksi'
         })
+        showToast('Surat berhasil diteruskan ke meja Pimpinan.', 'success')
       }
-    } else if (modalMode.value === 'forward' || modalMode.value === 'edit') {
+    } else if (modalMode.value === 'forward') {
       await pb.collection('disposisi').update(formData.value.id, {
         tujuan_bidang: formData.value.tujuan_bidang,
         instruksi: formData.value.instruksi,
@@ -355,42 +442,69 @@ const saveDisposisi = async () => {
         batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
         status: formData.value.status 
       })
+      showToast('Instruksi pimpinan berhasil diteruskan ke bidang!', 'success')
+    } else if (modalMode.value === 'edit') {
+      await pb.collection('disposisi').update(formData.value.id, {
+        tujuan_bidang: formData.value.tujuan_bidang,
+        instruksi: formData.value.instruksi,
+        sifat: formData.value.sifat,
+        batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
+        status: formData.value.status 
+      })
+      showToast('Instruksi disposisi berhasil diperbarui!', 'success')
     }
     showModal.value = false
     fetchDisposisi() 
   } catch (error) {
     console.error("Gagal menyimpan disposisi:", error)
-    alert("Terjadi kesalahan saat menyimpan data.")
+    showToast('Terjadi kesalahan saat menyimpan data.', 'error')
   } finally {
     isSaving.value = false
   }
 }
 
-const selesaikanDisposisi = async (item) => {
-  if (confirm(`Apakah instruksi pimpinan pada surat ini sudah diselesaikan?`)) {
-    try {
-      await pb.collection('disposisi').update(item.id, {
-        status: 'Selesai'
-      })
-      fetchDisposisi()
-    } catch (error) {
-      console.error(error)
-      alert("Gagal memperbarui status.")
-    }
-  }
+const selesaikanDisposisi = (item) => {
+  itemToConfirm.value = item
+  confirmAction.value = 'complete'
+  showConfirmModal.value = true
 }
 
-const hapusDisposisi = async (id) => {
-  if (confirm('Cabut lembar disposisi ini?')) {
-    try {
-      await pb.collection('disposisi').delete(id)
-      fetchDisposisi()
-    } catch (e) { console.error(e) }
+const hapusDisposisi = (item) => {
+  itemToConfirm.value = item
+  confirmAction.value = 'delete'
+  showConfirmModal.value = true
+}
+
+const executeConfirm = async () => {
+  if (!itemToConfirm.value) return
+  
+  try {
+    if (confirmAction.value === 'complete') {
+      await pb.collection('disposisi').update(itemToConfirm.value.id, {
+        status: 'Selesai'
+      })
+      showToast('Status disposisi berhasil ditandai Selesai!', 'success')
+    } else if (confirmAction.value === 'delete') {
+      await pb.collection('disposisi').delete(itemToConfirm.value.id)
+      showToast('Lembar disposisi berhasil dicabut.', 'success')
+    }
+    fetchDisposisi()
+  } catch (error) {
+    console.error(error)
+    showToast(`Gagal ${confirmAction.value === 'delete' ? 'mencabut' : 'menyelesaikan'} disposisi.`, 'error')
+  } finally {
+    showConfirmModal.value = false
+    itemToConfirm.value = null
   }
 }
 
 const sortedDisposisi = computed(() => {
   let filtered = disposisiList.value
+
+  if (activeTab.value !== 'Semua') {
+    filtered = filtered.filter(item => item.status === activeTab.value)
+  }
+
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     filtered = filtered.filter(item => {
@@ -432,7 +546,19 @@ const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--
 }
 
-watch(searchQuery, () => {
+watch([searchQuery, activeTab], () => {
   currentPage.value = 1
 })
 </script>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+</style>
