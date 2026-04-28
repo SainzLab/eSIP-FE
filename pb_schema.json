@@ -1,0 +1,395 @@
+[
+  {
+    "id": "_pb_users_auth_",
+    "name": "users",
+    "type": "auth",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "users_name",
+        "name": "name",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "users_avatar",
+        "name": "avatar",
+        "type": "file",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "mimeTypes": [
+            "image/jpeg",
+            "image/png",
+            "image/svg+xml",
+            "image/gif",
+            "image/webp"
+          ],
+          "thumbs": null,
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "protected": false
+        }
+      },
+      {
+        "system": false,
+        "id": "lvugq2hf",
+        "name": "role",
+        "type": "select",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSelect": 1,
+          "values": [
+            "Petugas Arsip",
+            "Kepala Sekolah",
+            "Staff"
+          ]
+        }
+      },
+      {
+        "system": false,
+        "id": "emt8ju6c",
+        "name": "bidang",
+        "type": "select",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSelect": 1,
+          "values": [
+            "Tata Usaha",
+            "Kesiswaan",
+            "Kepegawaian",
+            "Keuangan",
+            "Kurikulum",
+            "Sarana dan prasarana",
+            "Humas",
+            "Perpustakaan",
+            "Pimpinan",
+            "Dapodik"
+          ]
+        }
+      }
+    ],
+    "indexes": [],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.role = \"Petugas Arsip\"",
+    "updateRule": "@request.auth.role = \"Petugas Arsip\" || id = @request.auth.id",
+    "deleteRule": "@request.auth.role = \"Petugas Arsip\"",
+    "options": {
+      "allowEmailAuth": true,
+      "allowOAuth2Auth": true,
+      "allowUsernameAuth": true,
+      "exceptEmailDomains": null,
+      "manageRule": null,
+      "minPasswordLength": 8,
+      "onlyEmailDomains": null,
+      "onlyVerified": false,
+      "requireEmail": false
+    }
+  },
+  {
+    "id": "fuly466s5qjt26h",
+    "name": "arsip",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "n6ziwocn",
+        "name": "no_surat",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "epdzuaoo",
+        "name": "judul",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "zzqikfej",
+        "name": "tanggal_surat",
+        "type": "date",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": "",
+          "max": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "hxhsnct1",
+        "name": "kategori_id",
+        "type": "relation",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "rqkolnzsol0ekme",
+          "cascadeDelete": false,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": null
+        }
+      },
+      {
+        "system": false,
+        "id": "iolignoc",
+        "name": "bidang",
+        "type": "select",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "maxSelect": 1,
+          "values": [
+            "Tata Usaha",
+            "Kesiswaan",
+            "Kepegawaian",
+            "Keuangan",
+            "Kurikulum",
+            "Sarana dan prasarana",
+            "Humas",
+            "Perpustakaan",
+            "Pimpinan",
+            "Dapodik"
+          ]
+        }
+      },
+      {
+        "system": false,
+        "id": "3mgpsoq9",
+        "name": "file_dokumen",
+        "type": "file",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "mimeTypes": [],
+          "thumbs": [],
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "protected": false
+        }
+      },
+      {
+        "system": false,
+        "id": "txwjpsf6",
+        "name": "pengunggah",
+        "type": "relation",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "_pb_users_auth_",
+          "cascadeDelete": false,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": null
+        }
+      },
+      {
+        "system": false,
+        "id": "ogqbk4ik",
+        "name": "is_deleted",
+        "type": "bool",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {}
+      }
+    ],
+    "indexes": [],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "@request.auth.id != \"\"",
+    "deleteRule": "@request.auth.id != \"\"",
+    "options": {}
+  },
+  {
+    "id": "rqkolnzsol0ekme",
+    "name": "kategori",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "pojvilbx",
+        "name": "nama",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "k009iv7b",
+        "name": "deskripsi",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "otlc9ulh",
+        "name": "is_system",
+        "type": "bool",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {}
+      }
+    ],
+    "indexes": [],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "@request.auth.id != \"\"",
+    "deleteRule": "@request.auth.id != \"\"",
+    "options": {}
+  },
+  {
+    "id": "zc9omrc1m5zmc01",
+    "name": "disposisi",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "id": "sehwf7qx",
+        "name": "arsip_id",
+        "type": "relation",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "collectionId": "fuly466s5qjt26h",
+          "cascadeDelete": false,
+          "minSelect": null,
+          "maxSelect": 1,
+          "displayFields": null
+        }
+      },
+      {
+        "system": false,
+        "id": "9w6k9j5b",
+        "name": "tujuan_bidang",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "bccn292x",
+        "name": "instruksi",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "qelxtgvy",
+        "name": "sifat",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "4jp41vaj",
+        "name": "batas_waktu",
+        "type": "date",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": "",
+          "max": ""
+        }
+      },
+      {
+        "system": false,
+        "id": "fiqmfm9j",
+        "name": "status",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      }
+    ],
+    "indexes": [],
+    "listRule": "@request.auth.id != \"\"",
+    "viewRule": "@request.auth.id != \"\"",
+    "createRule": "@request.auth.id != \"\"",
+    "updateRule": "@request.auth.id != \"\"",
+    "deleteRule": "@request.auth.id != \"\"",
+    "options": {}
+  }
+]

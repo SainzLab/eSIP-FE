@@ -36,7 +36,7 @@
         <router-view></router-view>
       </main>
 
-      <GeminiWidget />
+      <OllamaWidget/>
       
     </div>
   </div>
@@ -45,5 +45,5 @@
 <script setup>
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
-import GeminiWidget from './components/GeminiWidget.vue'
+import OllamaWidget from './components/OllamaWidget.vue'
 </script>
