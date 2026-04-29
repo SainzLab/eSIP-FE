@@ -25,7 +25,7 @@ const routes = [
   
   { 
     path: '/admin-kategori', 
-    name: 'AdminKategori', 
+    name: 'AdminKategori',  
     component: AdminKategori, 
     meta: { requiresAuth: true, requiresAdmin: true } 
   },

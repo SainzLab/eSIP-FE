@@ -99,10 +99,17 @@
                 </div>
               </td>
               
-              <td class="py-4 px-4 text-slate-600 font-bold uppercase text-xs tracking-wider">
-                <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded bg-slate-100 flex items-center justify-center"><i class="fa-solid fa-building text-slate-400"></i></div>
-                  {{ item.tujuan_bidang }}
+              <td class="py-4 px-4 text-slate-600 font-bold uppercase text-xs tracking-wider max-w-[220px]" :title="formatBidang(item.tujuan_bidang)">
+                <div class="flex items-start gap-2">
+                  <div class="min-w-[24px] h-6 rounded bg-slate-100 flex items-center justify-center"><i class="fa-solid fa-building text-slate-400"></i></div>
+                  <div class="flex flex-wrap gap-1">
+                    <span v-if="Array.isArray(item.tujuan_bidang)" v-for="bdg in item.tujuan_bidang" :key="bdg" class="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                      {{ bdg }}
+                    </span>
+                    <span v-else class="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                      {{ item.tujuan_bidang }}
+                    </span>
+                  </div>
                 </div>
               </td>
               
@@ -162,7 +169,7 @@
 
     <div v-if="showModal" class="fixed inset-0 z-[99] flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showModal = false"></div>
-      <div class="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div class="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
           <h3 class="font-bold text-slate-800 text-lg">
             {{ modalMode === 'create' ? 'Mulai Disposisi Baru' : (modalMode === 'edit' ? 'Revisi Instruksi' : 'Instruksi Kepala Sekolah') }}
@@ -172,7 +179,7 @@
           </button>
         </div>
 
-        <form @submit.prevent="saveDisposisi" class="p-6 space-y-4">
+        <form @submit.prevent="saveDisposisi" class="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           <div v-if="modalMode === 'create'">
             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pilih Surat Masuk (Hanya PDF)</label>
             <select v-model="formData.arsip_id" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
@@ -185,27 +192,31 @@
           </div>
 
           <div v-if="modalMode === 'forward' || modalMode === 'edit' || (modalMode === 'create' && userRole === 'Kepala Sekolah')">
-            <div>
-              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Teruskan Ke Bidang</label>
-              <select v-model="formData.tujuan_bidang" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
+            
+            <div v-if="modalMode !== 'edit'" class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <label class="block text-xs font-bold text-slate-600 uppercase mb-3"><i class="fa-solid fa-building-user mr-1"></i> Teruskan Ke Bidang (Bisa Pilih Lebih Dari Satu)</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                <label v-for="bidang in opsiBidang" :key="bidang" class="flex items-center gap-2.5 p-2.5 border rounded-lg cursor-pointer hover:bg-white transition-colors" :class="formData.tujuan_bidang.includes(bidang) ? 'bg-indigo-50/50 border-indigo-300 ring-1 ring-indigo-300' : 'border-slate-200 bg-white'">
+                  <input type="checkbox" :value="bidang" v-model="formData.tujuan_bidang" class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer">
+                  <span class="text-sm font-semibold" :class="formData.tujuan_bidang.includes(bidang) ? 'text-indigo-700' : 'text-slate-600'">{{ bidang }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div v-if="modalMode === 'edit'">
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Ubah Bidang Tujuan</label>
+              <select :value="formData.tujuan_bidang[0]" @change="formData.tujuan_bidang = [$event.target.value]" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
                 <option value="" disabled>-- Pilih Bidang Tujuan --</option>
-                <option value="Tata Usaha">Tata Usaha</option>
-                <option value="Kesiswaan">Kesiswaan</option>
-                <option value="Kepegawaian">Kepegawaian</option>
-                <option value="Keuangan">Keuangan</option>
-                <option value="Kurikulum">Kurikulum</option>
-                <option value="Sarana dan prasarana">Sarana dan Prasarana</option>
-                <option value="Humas">Humas</option>
-                <option value="Dapodik">Dapodik</option>
+                <option v-for="bidang in opsiBidang" :key="bidang" :value="bidang">{{ bidang }}</option>
               </select>
             </div>
             
-            <div class="mt-4">
-              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Isi Instruksi / Arahan</label>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 mt-4">Isi Instruksi / Arahan</label>
               <textarea v-model="formData.instruksi" rows="3" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Contoh: Segera tindak lanjuti dan buat laporannya." required></textarea>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 mt-4">
+            <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sifat Disposisi</label>
                 <select v-model="formData.sifat" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
@@ -296,10 +307,12 @@ const itemsPerPage = 15
 const disposisiList = ref([])
 const opsiArsip = ref([])
 
+const opsiBidang = ['Tata Usaha', 'Kesiswaan', 'Kepegawaian', 'Keuangan', 'Kurikulum', 'Sarana dan Prasarana', 'Humas', 'Dapodik']
+
 const formData = ref({
   id: '',
   arsip_id: '',
-  tujuan_bidang: 'Pimpinan',
+  tujuan_bidang: [], 
   instruksi: '',
   sifat: 'Biasa',
   batas_waktu: '',
@@ -311,6 +324,13 @@ const showToast = (message, type = 'success') => {
   setTimeout(() => {
     notification.value.show = false
   }, 4000)
+}
+
+const formatBidang = (bidang) => {
+  if (Array.isArray(bidang)) {
+    return bidang.join(', ')
+  }
+  return bidang || '-'
 }
 
 const getSifatClass = (sifat) => {
@@ -348,7 +368,7 @@ const fetchDisposisi = async () => {
     if (userRole.value === 'Petugas Arsip' || userRole.value === 'Arsiparis' || userRole.value === 'Kepala Sekolah') {
       filterQuery = '' 
     } else {
-      filterQuery = `tujuan_bidang = "${userBidang.value}" && status != "Menunggu Instruksi"`
+      filterQuery = `tujuan_bidang ~ "${userBidang.value}" && status != "Menunggu Instruksi"`
     }
 
     const records = await pb.collection('disposisi').getFullList({
@@ -384,7 +404,7 @@ const openModal = async (mode, data = null) => {
     formData.value = { 
       id: '', 
       arsip_id: '', 
-      tujuan_bidang: userRole.value === 'Kepala Sekolah' ? '' : 'Pimpinan', 
+      tujuan_bidang: userRole.value === 'Kepala Sekolah' ? [] : ['Pimpinan'], 
       instruksi: '', 
       sifat: 'Biasa', 
       batas_waktu: new Date().toISOString().substring(0, 10), 
@@ -393,7 +413,8 @@ const openModal = async (mode, data = null) => {
   } else if (mode === 'forward' && data) {
     formData.value = {
       id: data.id,
-      tujuan_bidang: '', 
+      arsip_id: data.arsip_id, 
+      tujuan_bidang: [], 
       instruksi: '',
       sifat: 'Biasa',
       batas_waktu: new Date().toISOString().substring(0, 10), 
@@ -402,7 +423,8 @@ const openModal = async (mode, data = null) => {
   } else if (mode === 'edit' && data) {
     formData.value = {
       id: data.id,
-      tujuan_bidang: data.tujuan_bidang, 
+      arsip_id: data.arsip_id, 
+      tujuan_bidang: Array.isArray(data.tujuan_bidang) ? data.tujuan_bidang : [data.tujuan_bidang].filter(Boolean), 
       instruksi: data.instruksi,
       sifat: data.sifat,
       batas_waktu: data.batas_waktu ? data.batas_waktu.substring(0, 10) : new Date().toISOString().substring(0, 10), 
@@ -413,46 +435,82 @@ const openModal = async (mode, data = null) => {
 }
 
 const saveDisposisi = async () => {
+  if (['forward', 'edit'].includes(modalMode.value) || (modalMode.value === 'create' && userRole.value === 'Kepala Sekolah')) {
+    if (!formData.value.tujuan_bidang || formData.value.tujuan_bidang.length === 0) {
+      showToast('Pilih minimal satu bidang tujuan!', 'error')
+      return
+    }
+  }
+
   isSaving.value = true
   try {
+    if (modalMode.value === 'edit') {
+      const cekBidang = formData.value.tujuan_bidang[0]
+      try {
+        const cekDuplikat = await pb.collection('disposisi').getList(1, 1, {
+          filter: `arsip_id = "${formData.value.arsip_id}" && tujuan_bidang ~ "${cekBidang}" && id != "${formData.value.id}"`
+        })
+
+        if (cekDuplikat.totalItems > 0) {
+          showToast(`Instruksi untuk bidang ${cekBidang} pada surat ini sudah ada!`, 'error')
+          isSaving.value = false
+          return
+        }
+      } catch (e) {}
+    }
+
     if (modalMode.value === 'create') {
       if (userRole.value === 'Kepala Sekolah') {
-        await pb.collection('disposisi').create({
-          arsip_id: formData.value.arsip_id,
-          tujuan_bidang: formData.value.tujuan_bidang,
-          instruksi: formData.value.instruksi,
-          sifat: formData.value.sifat,
-          batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
-          status: 'Diproses'
+        const promises = formData.value.tujuan_bidang.map(bidang => {
+          return pb.collection('disposisi').create({
+            arsip_id: formData.value.arsip_id,
+            tujuan_bidang: [bidang], 
+            instruksi: formData.value.instruksi,
+            sifat: formData.value.sifat,
+            batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
+            status: 'Diproses'
+          })
         })
-        showToast('Disposisi baru berhasil dibuat!', 'success')
+        await Promise.all(promises)
+        showToast('Disposisi berhasil dibuat & disebar!', 'success')
       } else {
         await pb.collection('disposisi').create({
           arsip_id: formData.value.arsip_id,
-          tujuan_bidang: 'Pimpinan',
+          tujuan_bidang: ['Pimpinan'], 
           status: 'Menunggu Instruksi'
         })
         showToast('Surat berhasil diteruskan ke meja Pimpinan.', 'success')
       }
-    } else if (modalMode.value === 'forward') {
+    } else if (modalMode.value === 'forward' || modalMode.value === 'edit') {
+      
+      const bidangPertama = formData.value.tujuan_bidang[0]
+      const bidangSisa = formData.value.tujuan_bidang.slice(1)
+
       await pb.collection('disposisi').update(formData.value.id, {
-        tujuan_bidang: formData.value.tujuan_bidang,
+        tujuan_bidang: [bidangPertama],
         instruksi: formData.value.instruksi,
         sifat: formData.value.sifat,
         batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
-        status: formData.value.status 
+        status: modalMode.value === 'forward' ? 'Diproses' : formData.value.status 
       })
-      showToast('Instruksi pimpinan berhasil diteruskan ke bidang!', 'success')
-    } else if (modalMode.value === 'edit') {
-      await pb.collection('disposisi').update(formData.value.id, {
-        tujuan_bidang: formData.value.tujuan_bidang,
-        instruksi: formData.value.instruksi,
-        sifat: formData.value.sifat,
-        batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
-        status: formData.value.status 
-      })
-      showToast('Instruksi disposisi berhasil diperbarui!', 'success')
+
+      if (bidangSisa.length > 0) {
+        const promises = bidangSisa.map(bidang => {
+          return pb.collection('disposisi').create({
+            arsip_id: formData.value.arsip_id,
+            tujuan_bidang: [bidang],
+            instruksi: formData.value.instruksi,
+            sifat: formData.value.sifat,
+            batas_waktu: formData.value.batas_waktu + ' 12:00:00.000Z',
+            status: modalMode.value === 'forward' ? 'Diproses' : formData.value.status
+          })
+        })
+        await Promise.all(promises)
+      }
+
+      showToast(modalMode.value === 'forward' ? 'Instruksi berhasil diteruskan!' : 'Instruksi disposisi berhasil diperbarui!', 'success')
     }
+    
     showModal.value = false
     fetchDisposisi() 
   } catch (error) {
