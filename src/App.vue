@@ -71,7 +71,7 @@ const route = useRoute()
 
 const showTimeoutModal = ref(false)
 
-const TIMEOUT_DURATION = 2 * 6000 * 100000
+const TIMEOUT_DURATION = 2 * 60 * 1000
 let timeoutId = null
 
 const autoLogout = () => {
