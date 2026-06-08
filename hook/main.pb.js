@@ -1,8 +1,6 @@
 // pb_hooks/main.pb.js
 
-// ==========================================
 // 1. Endpoint API AI Ollama
-// ==========================================
 routerAdd("POST", "/api/tanya-ai", (c) => {
     const data = $apis.requestInfo(c).data;
     const prompt = data.prompt;
@@ -37,10 +35,7 @@ routerAdd("POST", "/api/tanya-ai", (c) => {
     }
 }, $apis.requireRecordAuth());
 
-
-// ==========================================
-// 2. Endpoint Khusus Reset Password (Bypass oldPassword)
-// ==========================================
+// 2. Endpoint Khusus Reset Password
 routerAdd("POST", "/api/admin/reset-password", (c) => {
     const data = $apis.requestInfo(c).data;
     const targetUserId = data.targetUserId;
@@ -69,10 +64,7 @@ routerAdd("POST", "/api/admin/reset-password", (c) => {
     }
 }, $apis.requireRecordAuth("users"));
 
-
-// ==========================================
 // 3. Hook Verifikasi reCAPTCHA saat Login
-// ==========================================
 onRecordAuthWithPasswordRequest((e) => {
     const captchaToken = e.httpContext.request().header.get("X-Captcha-Token");
 
