@@ -1,4 +1,8 @@
 // pb_hooks/main.pb.js
+
+// ==========================================
+// 1. Endpoint API AI Ollama
+// ==========================================
 routerAdd("POST", "/api/tanya-ai", (c) => {
     const data = $apis.requestInfo(c).data;
     const prompt = data.prompt;
@@ -9,7 +13,7 @@ routerAdd("POST", "/api/tanya-ai", (c) => {
 
     try {
         const response = $http.send({
-            url: "http://192.168.8.25:11434/api/generate", 
+            url: "http://192.168.8.125:11434/api/generate", 
             method: "POST",
             body: JSON.stringify({
                 model: "qwen2.5:7b", 
@@ -33,13 +37,15 @@ routerAdd("POST", "/api/tanya-ai", (c) => {
     }
 }, $apis.requireRecordAuth());
 
+
+// ==========================================
+// 2. Endpoint Khusus Reset Password (Bypass oldPassword)
+// ==========================================
 routerAdd("POST", "/api/admin/reset-password", (c) => {
     const data = $apis.requestInfo(c).data;
     const targetUserId = data.targetUserId;
     const newPassword = data.newPassword;
-
     const currentUser = c.get("authRecord");
-
     const userRole = currentUser ? currentUser.get("role") : "";
     
     if (userRole !== "Petugas Arsip" && userRole !== "Kepala Sekolah") {
@@ -63,13 +69,17 @@ routerAdd("POST", "/api/admin/reset-password", (c) => {
     }
 }, $apis.requireRecordAuth("users"));
 
+
+// ==========================================
+// 3. Hook Verifikasi reCAPTCHA saat Login
+// ==========================================
 onRecordAuthWithPasswordRequest((e) => {
     const captchaToken = e.httpContext.request().header.get("X-Captcha-Token");
 
     if (!captchaToken) {
         throw new BadRequestError("Token Captcha tidak ditemukan. Silakan centang captcha terlebih dahulu.");
     }
-    //note kata gemini ganti token pas production
+
     const secretKey = "6LcVspwsAAAAANZEdXbrRN9cOrsPZL_noTlzj3563"; 
 
     const res = $http.send({

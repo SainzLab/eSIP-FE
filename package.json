@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "apexcharts": "^5.6.0",
+    "dompurify": "^3.4.8",
     "pocketbase": "^0.26.8",
     "vue": "^3.5.29",
     "vue-router": "^4.6.4",
