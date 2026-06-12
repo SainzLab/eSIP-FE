@@ -25,23 +25,23 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-w-0 overflow-hidden">
           <h2 class="text-lg font-bold text-slate-800 mb-1">Rasio Penyelesaian Disposisi</h2>
           <p class="text-xs text-slate-500 mb-6">Pantau persentase instruksi yang sudah dikerjakan staff.</p>
           <div class="flex justify-center">
-            <apexchart type="donut" height="320" :options="chartOptionsDisposisi" :series="seriesDisposisi"></apexchart>
+            <apexchart type="donut" width="100%" height="320" :options="chartOptionsDisposisi" :series="seriesDisposisi"></apexchart>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-w-0 overflow-hidden">
           <h2 class="text-lg font-bold text-slate-800 mb-1">Sebaran Arsip per Bidang</h2>
           <p class="text-xs text-slate-500 mb-6">Volume dokumen berdasarkan bagian/bidang di sekolah.</p>
-          <apexchart type="bar" height="320" :options="chartOptionsBidang" :series="seriesBidang"></apexchart>
+          <apexchart type="bar" width="100%" height="320" :options="chartOptionsBidang" :series="seriesBidang"></apexchart>
         </div>
 
       </div>
 
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mt-6">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mt-6 min-w-0 overflow-hidden">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h2 class="text-lg font-bold text-slate-800 mb-1">Rekapitulasi Tren Arsip</h2>
@@ -56,7 +56,7 @@
           </div>
         </div>
         
-        <apexchart type="area" height="350" :options="chartOptionsBulanan" :series="seriesBulanan"></apexchart>
+        <apexchart type="area" width="100%" height="350" :options="chartOptionsBulanan" :series="seriesBulanan"></apexchart>
       </div>
 
     </div>
@@ -95,8 +95,12 @@ const chartOptionsBidang = ref({
   colors: ['#6366f1'], 
   plotOptions: { bar: { borderRadius: 4, horizontal: true } },
   dataLabels: { enabled: true },
-  xaxis: { categories: [] },
-  grid: { strokeDashArray: 4 }
+  xaxis: { 
+    categories: [],
+    labels: { formatter: (val) => Math.floor(val) }
+  },
+  
+  grid: { strokeDashArray: 4, padding: { right: 30 } } 
 })
 
 const seriesBulanan = ref([{ name: 'Total Arsip Baru', data: [0,0,0,0,0,0,0,0,0,0,0,0] }])
@@ -161,8 +165,22 @@ const fetchData = async () => {
     })
 
     const sortedBidang = Object.entries(countBidang).sort((a, b) => b[1] - a[1])
-    chartOptionsBidang.value = { ...chartOptionsBidang.value, xaxis: { categories: sortedBidang.map(item => item[0]) } }
-    seriesBidang.value = [{ name: 'Jumlah Dokumen', data: sortedBidang.map(item => item[1]) }]
+    
+    const categories = sortedBidang.map(item => item[0])
+    const dataValues = sortedBidang.map(item => item[1])
+    
+    const maxValue = Math.max(...dataValues, 1)
+
+    chartOptionsBidang.value = { 
+      ...chartOptionsBidang.value, 
+      xaxis: { 
+        categories: categories,
+        
+        max: maxValue + Math.ceil(maxValue * 0.15),
+        labels: { formatter: (val) => Math.floor(val) }
+      } 
+    }
+    seriesBidang.value = [{ name: 'Jumlah Dokumen', data: dataValues }]
 
     availableYears.value = Array.from(yearsSet).sort((a, b) => b - a)
 
