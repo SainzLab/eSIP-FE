@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-6 pb-10">
+  <div class="flex flex-col gap-6 relative pb-10">
     
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-red-100">
       <div>
@@ -111,6 +111,38 @@
 
     </div>
 
+    <div v-if="confirmModal.show" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmModal.show = false"></div>
+      <div class="relative bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+        
+        <div :class="confirmModal.type === 'restore' ? 'bg-emerald-50 text-emerald-500 border-emerald-100' : 'bg-red-50 text-red-500 border-red-100'" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl border-4">
+          <i :class="confirmModal.type === 'restore' ? 'fa-solid fa-rotate-left' : 'fa-solid fa-triangle-exclamation'"></i>
+        </div>
+        
+        <h3 class="font-bold text-slate-800 text-lg mb-2">
+          {{ confirmModal.title }}
+        </h3>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+          {{ confirmModal.message }}
+        </p>
+        
+        <div class="flex gap-3">
+          <button @click="confirmModal.show = false" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg transition-colors">Batal</button>
+          <button @click="executeAction" :class="confirmModal.type === 'restore' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' : 'bg-red-600 hover:bg-red-700 shadow-red-200'" class="flex-1 py-2.5 text-white font-bold rounded-lg transition-colors shadow-md flex justify-center items-center gap-2">
+            <i v-if="isProcessing" class="fa-solid fa-spinner fa-spin"></i>
+            {{ isProcessing ? 'Memproses...' : (confirmModal.type === 'restore' ? 'Ya, Kembalikan' : 'Ya, Musnahkan') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <transition name="toast">
+      <div v-if="notification.show" class="fixed bottom-6 right-6 z-[110] flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl border" :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'">
+        <i :class="notification.type === 'success' ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-solid fa-circle-exclamation text-red-500'" class="text-xl"></i>
+        <p class="text-sm font-bold">{{ notification.message }}</p>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -122,10 +154,32 @@ const userRole = ref(localStorage.getItem('user_role') || 'Staff')
 const userBidang = ref(localStorage.getItem('user_bidang') || 'Tata Usaha')
 
 const isLoading = ref(true)
+const isProcessing = ref(false)
 const arsipTerhapus = ref([])
 
 const currentPage = ref(1)
 const itemsPerPage = 15
+
+const confirmModal = ref({
+  show: false,
+  type: '', 
+  data: null,
+  title: '',
+  message: ''
+})
+
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success'
+})
+
+const showToast = (message, type = 'success') => {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
 
 const formatDateTime = (dateString) => {
   if (!dateString) return '-'
@@ -165,46 +219,64 @@ onMounted(() => {
   fetchTrash()
 })
 
-const restoreArsip = async (arsip) => {
+const restoreArsip = (arsip) => {
+  confirmModal.value = {
+    show: true,
+    type: 'restore',
+    data: arsip,
+    title: 'Kembalikan Dokumen?',
+    message: `Dokumen "${arsip.judul}" akan dipulihkan dan dikembalikan ke halaman Manajemen Arsip.`
+  }
+}
+
+const deletePermanent = (arsip) => {
+  confirmModal.value = {
+    show: true,
+    type: 'delete',
+    data: arsip,
+    title: 'Musnahkan Permanen?',
+    message: `PERINGATAN! Anda akan memusnahkan dokumen "${arsip.judul}" secara permanen. File tidak dapat dikembalikan lagi.`
+  }
+}
+
+const kosongkanTongSampah = () => {
+  confirmModal.value = {
+    show: true,
+    type: 'empty',
+    data: null,
+    title: 'Kosongkan Tong Sampah?',
+    message: 'Apakah Anda yakin ingin memusnahkan SEMUA dokumen di tong sampah ini secara permanen?'
+  }
+}
+
+const executeAction = async () => {
+  isProcessing.value = true
+  const { type, data } = confirmModal.value
+
   try {
-    await pb.collection('arsip').update(arsip.id, {
-      is_deleted: false
-    })
-    fetchTrash() 
-    alert(`Dokumen "${arsip.judul}" berhasil dikembalikan ke Manajemen Arsip.`)
-  } catch (error) {
-    console.error("Gagal merestore arsip:", error)
-    alert("Terjadi kesalahan saat mengembalikan dokumen.")
-  }
-}
-
-const deletePermanent = async (arsip) => {
-  if (confirm(`PERINGATAN! Anda akan memusnahkan dokumen "${arsip.judul}" secara permanen. File tidak dapat dikembalikan. Lanjutkan?`)) {
-    try {
-      await pb.collection('arsip').delete(arsip.id)
-      fetchTrash() 
-    } catch (error) {
-      console.error("Gagal menghapus permanen:", error)
-      alert("Gagal memusnahkan dokumen. Pastikan Anda memiliki izin akses.")
-    }
-  }
-}
-
-const kosongkanTongSampah = async () => {
-  if (confirm(`Apakah Anda yakin ingin memusnahkan SEMUA dokumen di tong sampah secara permanen?`)) {
-    try {
-      isLoading.value = true
+    if (type === 'restore') {
+      await pb.collection('arsip').update(data.id, { is_deleted: false })
+      showToast(`Dokumen "${data.judul}" berhasil dikembalikan.`, 'success')
+      
+    } else if (type === 'delete') {
+      await pb.collection('arsip').delete(data.id)
+      showToast(`Dokumen "${data.judul}" telah dimusnahkan.`, 'success')
+      
+    } else if (type === 'empty') {
       for (const arsip of arsipTerhapus.value) {
         await pb.collection('arsip').delete(arsip.id)
       }
-      fetchTrash()
+      showToast('Seluruh tong sampah berhasil dikosongkan.', 'success')
       currentPage.value = 1
-    } catch (error) {
-      console.error("Gagal mengosongkan:", error)
-      alert("Terjadi kesalahan saat mengosongkan tong sampah.")
-    } finally {
-      isLoading.value = false
     }
+    
+    fetchTrash()
+  } catch (error) {
+    console.error("Gagal mengeksekusi aksi:", error)
+    showToast("Terjadi kesalahan sistem. Pastikan Anda memiliki izin akses.", 'error')
+  } finally {
+    isProcessing.value = false
+    confirmModal.value.show = false
   }
 }
 
@@ -226,3 +298,15 @@ const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--
 }
 </script>
+
+<style scoped>
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+</style>
