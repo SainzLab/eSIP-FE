@@ -92,7 +92,7 @@
 import { ref, nextTick } from 'vue'
 import PocketBase from 'pocketbase' 
 
-const pb = new PocketBase('https://pbcdn.sainzcloud.my.id')
+const pb = new PocketBase('https://pbcdn.sainzlab.my.id')
 
 const isOpen = ref(false)
 const userInput = ref('')
@@ -118,7 +118,7 @@ const sendMessage = async () => {
 
   try {
     // const response = await fetch('/tanya-ai',
-    const response = await fetch('https://pbcdn.sainzcloud.my.id/api/tanya-ai', {
+    const response = await fetch('https://pbcdn.sainzlab.my.id/api/tanya-ai', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
