@@ -18,6 +18,18 @@
       </button>
     </div>
 
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start sm:items-center gap-4 text-amber-800 shadow-sm">
+      <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
+        <i class="fa-solid fa-clock-rotate-left text-amber-600 text-lg"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-sm">Pembersihan Otomatis Aktif</h3>
+        <p class="text-xs mt-0.5 opacity-80 leading-relaxed">
+          Sistem akan memusnahkan dokumen di tong sampah secara permanen setelah berada di sini selama <b>7 hari</b>. Pastikan untuk me-restore dokumen penting Anda sebelum batas waktu habis.
+        </p>
+      </div>
+    </div>
+
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -74,8 +86,18 @@
                   </span>
                 </div>
               </td>
-              <td class="py-4 px-6 text-slate-500 text-xs font-medium">
-                {{ formatDateTime(arsip.updated) }}
+              <td class="py-4 px-6">
+                <div class="flex flex-col items-start gap-1.5">
+                  <span class="text-slate-500 text-xs font-medium">
+                    {{ formatDateTime(arsip.updated) }}
+                  </span>
+                  <span 
+                    class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider"
+                    :class="getDaysLeftClass(arsip.updated)"
+                  >
+                    <i class="fa-regular fa-clock mr-1"></i> {{ getDaysLeftText(arsip.updated) }}
+                  </span>
+                </div>
               </td>
               <td class="py-4 px-6 text-right">
                 <div class="flex justify-end gap-2">
@@ -186,6 +208,34 @@ const formatDateTime = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + 
          date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
+
+const getDaysLeft = (updatedDate) => {
+  if (!updatedDate) return 0;
+  
+  const deletedAt = new Date(updatedDate);
+  
+  const autoDeleteAt = new Date(deletedAt);
+  autoDeleteAt.setDate(autoDeleteAt.getDate() + 7);
+  
+  const today = new Date();
+  const diffTime = autoDeleteAt - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
+}
+
+const getDaysLeftText = (updatedDate) => {
+  const diffDays = getDaysLeft(updatedDate);
+  if (diffDays <= 0) return 'Dimusnahkan Hari Ini';
+  return `Sisa ${diffDays} Hari`;
+}
+
+const getDaysLeftClass = (updatedDate) => {
+  const diffDays = getDaysLeft(updatedDate);
+  if (diffDays <= 1) return 'bg-red-100 text-red-600 border border-red-200';
+  if (diffDays <= 3) return 'bg-amber-100 text-amber-600 border border-amber-200';
+  return 'bg-slate-100 text-slate-500 border border-slate-200';
 }
 
 const fetchTrash = async () => {
